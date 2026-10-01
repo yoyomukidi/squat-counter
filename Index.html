@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web-based Squat Counter</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- MediaPipe Pose & Camera Utils -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+</head>
+<body class="bg-slate-900 text-white font-sans flex flex-col items-center justify-min min-h-screen p-4">
+
+    <h1 class="text-xl font-bold mb-3">AI Squat Counter 🤖</h1>
+
+    <!-- Input Nama Pengguna (Sejajar / Horizontal) -->
+    <div class="w-full max-w-md mb-3 flex items-center gap-3 bg-slate-800/80 border border-slate-700 px-3 py-2 rounded-xl">
+        <label for="username" class="text-xs font-bold text-slate-300 whitespace-nowrap">NAMA:</label>
+        <input type="text" id="username" placeholder="Masukkan nama Anda..." 
+            class="w-full bg-transparent text-white text-sm focus:outline-none placeholder-slate-500">
+    </div>
+
+    <!-- Kotak Utama Kamera & Tampilan -->
+    <div class="relative w-full max-w-md bg-black rounded-xl overflow-hidden shadow-2xl flex justify-center items-center aspect-[3/4]">
+        <!-- Elemen Video Webcam -->
+        <video id="webcam" class="absolute inset-0 w-full h-full object-cover -scale-x-100" autoplay playsinline></video>
+        <!-- Elemen Canvas untuk Kerangka Tubuh (Skeleton) -->
+        <canvas id="output_canvas" class="absolute inset-0 z-10 w-full h-full -scale-x-100"></canvas>
+        
+        <!-- Panel Status -->
+        <div class="absolute top-3 left-3 z-20 bg-slate-800/90 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-700">
+            <p class="text-[10px] text-slate-400">STATUS</p>
+            <p id="pose-status" class="text-xs font-bold text-yellow-400">Memuat AI...</p>
+        </div>
+
+        <!-- Panel Reps (Ukuran Huruf/Angka Diperbesar) -->
+        <div class="absolute top-3 right-3 z-20 bg-slate-800/90 backdrop-blur px-4 py-2 rounded-lg border border-slate-700 text-center shadow-lg">
+            <p class="text-xs text-slate-300 font-semibold tracking-wider">REPS</p>
+            <p id="counter" class="text-5xl font-black text-emerald-400 leading-none mt-1">0</p>
+        </div>
+    </div>
+
+    <!-- Tombol Aksi -->
+    <div class="mt-4 w-full max-w-md flex gap-4">
+        <button id="save-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow-lg transition text-sm">
+            Simpan ke Google Sheets
+        </button>
+    </div>
+
+    <script>
+        const videoElement = document.getElementById('webcam');
+        const canvasElement = document.getElementById('output_canvas');
+        const canvasCtx = canvasElement.getContext('2d');
+        const counterElement = document.getElementById('counter');
+        const statusElement = document.getElementById('pose-status');
+        const saveButton = document.getElementById('save-btn');
+        const userInput = document.getElementById('username');
+
+        // Ganti dengan URL Web App Google Apps Script Anda
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzufPcIlZ7t3HAYBEHc9zARpYVQMKbF64_Pl-U0xuKiptN7ey307LvkoCP0LRoR2Fj_/exec';
+
+        let squatCount = 0;
+        let stage = null;
+
+        function calculateAngle(a, b, c) {
+            let radians = Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(a.y - b.y, a.x - b.x);
+            let angle = Math.abs(radians * 180.0 / Math.PI);
+            if (angle > 180.0) {
+                angle = 360.0 - angle;
+            }
+            return angle;
+        }
+
+        function onResults(results) {
+            canvasElement.width = videoElement.videoWidth || 640;
+            canvasElement.height = videoElement.videoHeight || 480;
+
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+            if (results.poseLandmarks) {
+                const landmarks = results.poseLandmarks;
+                
+                // Ambil titik pinggul (24), lutut (26), pergelangan kaki (28) sebelah kanan
+                const hip = landmarks[24];
+                const knee = landmarks[26];
+                const ankle = landmarks[28];
+
+                if (hip && knee && ankle && hip.visibility > 0.6 && knee.visibility > 0.6 && ankle.visibility > 0.6) {
+                    let angle = calculateAngle(hip, knee, ankle);
+
+                    if (angle > 160) {
+                        stage = "up";
+                        statusElement.innerText = "Berdiri (Up)";
+                        statusElement.className = "text-xs font-bold text-emerald-400";
+                    }
+                    else if (angle < 95 && stage === "up") {
+                        stage = "down";
+                        statusElement.innerText = "Jongkok (Down)";
+                        statusElement.className = "text-xs font-bold text-blue-400";
+                        squatCount++;
+                        counterElement.innerText = squatCount;
+                    } else if (angle >= 95 && angle <= 160) {
+                        if (stage === "down") {
+                            statusElement.innerText = "Naik / Turun...";
+                            statusElement.className = "text-xs font-bold text-yellow-400";
+                        }
+                    }
+                } else {
+                    statusElement.innerText = "Mundurkan Posisi Badan";
+                    statusElement.className = "text-xs font-bold text-red-400";
+                }
+
+                drawCustomSkeleton(landmarks);
+
+            } else {
+                statusElement.innerText = "Badan Tidak Terlihat";
+                statusElement.className = "text-xs font-bold text-red-400";
+            }
+            canvasCtx.restore();
+        }
+
+        function drawCustomSkeleton(landmarks) {
+            const connections = [
+                [11, 12], [11, 23], [12, 24], [23, 24],
+                [23, 25], [25, 27],
+                [24, 26], [26, 28]
+            ];
+
+            canvasCtx.strokeStyle = '#10B981';
+            canvasCtx.lineWidth = 3;
+
+            connections.forEach(([i, j]) => {
+                const p1 = landmarks[i];
+                const p2 = landmarks[j];
+                if (p1 && p2 && p1.visibility > 0.5 && p2.visibility > 0.5) {
+                    canvasCtx.beginPath();
+                    canvasCtx.moveTo(p1.x * canvasElement.width, p1.y * canvasElement.height);
+                    canvasCtx.lineTo(p2.x * canvasElement.width, p2.y * canvasElement.height);
+                    canvasCtx.stroke();
+                }
+            });
+
+            canvasCtx.fillStyle = '#EF4444';
+            landmarks.forEach((landmark) => {
+                if (landmark.visibility > 0.5) {
+                    canvasCtx.beginPath();
+                    canvasCtx.arc(landmark.x * canvasElement.width, landmark.y * canvasElement.height, 4, 0, 2 * Math.PI);
+                    canvasCtx.fill();
+                }
+            });
+        }
+
+        const pose = new Pose({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
+        });
+
+        pose.setOptions({
+            modelComplexity: 0,
+            smoothLandmarks: true,
+            enableSegmentation: false,
+            minDetectionConfidence: 0.6,
+            minTrackingConfidence: 0.6
+        });
+
+        pose.onResults(onResults);
+
+        const camera = new Camera(videoElement, {
+            onFrame: async () => {
+                await pose.send({image: videoElement});
+            },
+            width: 480,
+            height: 640
+        });
+        camera.start();
+
+        // Tombol simpan ke Google Sheets dengan menyertakan nama
+        saveButton.addEventListener('click', async () => {
+            const namaUser = userInput.value.trim();
+            if (!namaUser) {
+                alert("Silakan masukkan nama Anda terlebih dahulu!");
+                userInput.focus();
+                return;
+            }
+
+            if (squatCount === 0) {
+                alert("Belum ada squat yang dihitung!");
+                return;
+            }
+
+            saveButton.innerText = "Menyimpan...";
+            saveButton.disabled = true;
+
+            try {
+                await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nama: namaUser, reps: squatCount })
+                });
+                alert(`Terima kasih ${namaUser}, berhasil menyimpan ${squatCount} repetisi!`);
+                squatCount = 0;
+                counterElement.innerText = 0;
+                userInput.value = "";
+            } catch (error) {
+                console.error("Gagal menyimpan:", error);
+                alert("Terjadi kesalahan saat menyimpan data.");
+            } finally {
+                saveButton.innerText = "Simpan ke Google Sheets";
+                saveButton.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
