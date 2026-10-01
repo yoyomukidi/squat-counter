@@ -46,7 +46,7 @@
         </div>
     </div>
 
-    <!-- TAHAP 3: AREA KAMERA & SQUAT COUNTER (Awalnya Disembunyikan) -->
+    <!-- TAHAP 3: AREA KAMERA & SQUAT COUNTER -->
     <div id="app-section" class="hidden flex flex-col items-center w-full max-w-md">
         <div class="w-full mb-2 text-xs text-slate-400 flex justify-between items-center bg-slate-800 px-3 py-2 rounded-lg">
             <span>Peserta: <strong id="active-user-display" class="text-white"></strong></span>
@@ -76,7 +76,7 @@
     </div>
 
     <script>
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwXciwxmHfgVA0pOYHwfSj_RoN4tVx7_2DzyMmLJ45vGjS3bt5CiCB6l0lYXS7bpf-Q/exec';
+        const APPS_SCRIPT_URL = 'URL_WEB_APP_APPS_SCRIPT_ANDA';
 
         const loginSection = document.getElementById('login-section');
         const infoModal = document.getElementById('info-modal');
@@ -104,7 +104,7 @@
         let currentUserName = "";
         let cameraInstance = null;
 
-        // 1. Cek Nama & Ambil Data Riwayat
+        // Cek Nama & Ambil Data Rekor Lebih Cepat
         checkBtn.addEventListener('click', async () => {
             const name = userInput.value.trim();
             if (!name) {
@@ -113,7 +113,7 @@
                 return;
             }
             currentUserName = name;
-            checkBtn.innerText = "Memuat data...";
+            checkBtn.innerText = "Memeriksa...";
             checkBtn.disabled = true;
 
             try {
@@ -127,7 +127,6 @@
                 infoModal.classList.remove('hidden');
             } catch (err) {
                 console.error(err);
-                // Jika gagal koneksi backend, tetap izinkan lanjut dengan 0
                 modalName.innerText = `Halo, ${name}!`;
                 modalToday.innerText = 0;
                 modalTotal.innerText = 0;
@@ -138,10 +137,18 @@
             }
         });
 
-        // Tombol Tutup Modal
+        // Tombol Tutup (Langsung Tutup Web / Tab atau Reset Form)
         closeModalBtn.addEventListener('click', () => {
             infoModal.classList.add('hidden');
             userInput.value = "";
+            // Mencoba menutup tab web secara otomatis
+            try {
+                window.close();
+            } catch (e) {
+                console.log("Penutupan tab diblokir oleh browser.");
+            }
+            // Fallback jika browser menolak menutup tab
+            window.location.href = "about:blank";
         });
 
         // Tombol Lanjutkan (Masuk ke Sesi Squat)
@@ -164,7 +171,6 @@
             counterElement.innerText = 0;
         });
 
-        // Logika AI MediaPipe Squat
         function calculateAngle(a, b, c) {
             let radians = Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(a.y - b.y, a.x - b.x);
             let angle = Math.abs(radians * 180.0 / Math.PI);
@@ -267,7 +273,6 @@
             cameraInstance.start();
         }
 
-        // Simpan Hasil ke Google Sheets
         saveButton.addEventListener('click', async () => {
             if (squatCount === 0) {
                 alert("Belum ada squat yang dihitung!");
@@ -288,7 +293,6 @@
                 squatCount = 0;
                 counterElement.innerText = 0;
                 
-                // Kembali ke halaman awal setelah simpan
                 appSection.classList.add('hidden');
                 loginSection.classList.remove('hidden');
                 userInput.value = "";
