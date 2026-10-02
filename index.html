@@ -61,8 +61,10 @@
         </div>
 
         <div class="relative w-full bg-black rounded-xl overflow-hidden shadow-2xl flex justify-center items-center aspect-[3/4]">
-            <video id="webcam" class="absolute inset-0 w-full h-full object-cover -scale-x-100" autoplay playsinline></video>
-            <canvas id="output_canvas" class="absolute inset-0 z-10 w-full h-full -scale-x-100"></canvas>
+            <!-- Video diperkecil menggunakan kelas .camera-zoom agar sudut pandang lebih luas -->
+            <video id="webcam" class="absolute inset-0 w-full h-full object-cover camera-zoom" autoplay playsinline></video>
+            <!-- Canvas juga disesuaikan cerminnya agar pas dengan video -->
+            <canvas id="output_canvas" class="absolute inset-0 z-10 w-full h-full camera-zoom"></canvas>
             
             <div class="absolute top-3 left-3 z-20 bg-slate-800/90 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-700">
                 <p class="text-[10px] text-slate-400">STATUS</p>
@@ -111,7 +113,6 @@
         let currentUserName = "";
         let cameraInstance = null;
 
-        // Cek Nama & Ambil Data Rekor Lebih Cepat
         checkBtn.addEventListener('click', async () => {
             const name = userInput.value.trim();
             if (!name) {
@@ -144,21 +145,17 @@
             }
         });
 
-        // Tombol Tutup (Langsung Tutup Web / Tab atau Reset Form)
         closeModalBtn.addEventListener('click', () => {
             infoModal.classList.add('hidden');
             userInput.value = "";
-            // Mencoba menutup tab web secara otomatis
             try {
                 window.close();
             } catch (e) {
                 console.log("Penutupan tab diblokir oleh browser.");
             }
-            // Fallback jika browser menolak menutup tab
             window.location.href = "about:blank";
         });
 
-        // Tombol Lanjutkan (Masuk ke Sesi Squat)
         startChallengeBtn.addEventListener('click', () => {
             infoModal.classList.add('hidden');
             loginSection.classList.add('hidden');
@@ -198,20 +195,20 @@
                 const knee = landmarks[26];
                 const ankle = landmarks[28];
 
-                if (hip && knee && ankle && hip.visibility > 0.6 && knee.visibility > 0.6 && ankle.visibility > 0.6) {
+                if (hip && knee && ankle && hip.visibility > 0.4 && knee.visibility > 0.4 && ankle.visibility > 0.4) {
                     let angle = calculateAngle(hip, knee, ankle);
 
-                    if (angle > 160) {
+                    if (angle > 140) {
                         stage = "up";
                         statusElement.innerText = "Berdiri (Up)";
                         statusElement.className = "text-xs font-bold text-emerald-400";
-                    } else if (angle < 95 && stage === "up") {
+                    } else if (angle < 110 && stage === "up") {
                         stage = "down";
                         statusElement.innerText = "Jongkok (Down)";
                         statusElement.className = "text-xs font-bold text-blue-400";
                         squatCount++;
                         counterElement.innerText = squatCount;
-                    } else if (angle >= 95 && angle <= 160) {
+                    } else if (angle >= 110 && angle <= 140) {
                         if (stage === "down") {
                             statusElement.innerText = "Naik / Turun...";
                             statusElement.className = "text-xs font-bold text-yellow-400";
@@ -237,7 +234,7 @@
             connections.forEach(([i, j]) => {
                 const p1 = landmarks[i];
                 const p2 = landmarks[j];
-                if (p1 && p2 && p1.visibility > 0.5 && p2.visibility > 0.5) {
+                if (p1 && p2 && p1.visibility > 0.4 && p2.visibility > 0.4) {
                     canvasCtx.beginPath();
                     canvasCtx.moveTo(p1.x * canvasElement.width, p1.y * canvasElement.height);
                     canvasCtx.lineTo(p2.x * canvasElement.width, p2.y * canvasElement.height);
@@ -247,7 +244,7 @@
 
             canvasCtx.fillStyle = '#EF4444';
             landmarks.forEach((landmark) => {
-                if (landmark.visibility > 0.5) {
+                if (landmark.visibility > 0.4) {
                     canvasCtx.beginPath();
                     canvasCtx.arc(landmark.x * canvasElement.width, landmark.y * canvasElement.height, 4, 0, 2 * Math.PI);
                     canvasCtx.fill();
@@ -264,8 +261,8 @@
                 modelComplexity: 0,
                 smoothLandmarks: true,
                 enableSegmentation: false,
-                minDetectionConfidence: 0.6,
-                minTrackingConfidence: 0.6
+                minDetectionConfidence: 0.5,
+                minTrackingConfidence: 0.5
             });
 
             pose.onResults(onResults);
@@ -296,17 +293,19 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ nama: currentUserName, reps: squatCount })
                 });
-                alert(`Berhasil menyimpan ${squatCount} repetisi untuk ${currentUserName}!`);
-                squatCount = 0;
-                counterElement.innerText = 0;
                 
-                appSection.classList.add('hidden');
-                loginSection.classList.remove('hidden');
-                userInput.value = "";
+                alert(`Berhasil menyimpan ${squatCount} repetisi untuk ${currentUserName}!`);
+                
+                try {
+                    window.close();
+                } catch (e) {
+                    console.log("Penutupan tab diblokir oleh browser.");
+                }
+                window.location.href = "about:blank";
+
             } catch (error) {
                 console.error("Gagal menyimpan:", error);
                 alert("Terjadi kesalahan saat menyimpan data.");
-            } finally {
                 saveButton.innerText = "Simpan ke Google Sheets";
                 saveButton.disabled = false;
             }
