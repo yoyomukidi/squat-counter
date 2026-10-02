@@ -54,7 +54,7 @@
         </div>
 
         <div class="relative w-full bg-black rounded-xl overflow-hidden shadow-2xl flex justify-center items-center aspect-[3/4]">
-            <video id="webcam" class="absolute inset-0 w-full h-full object-contain -scale-x-100" autoplay playsinline></video>
+            <video id="webcam" class="absolute inset-0 w-full h-full object-cover -scale-x-100" autoplay playsinline></video>
             <canvas id="output_canvas" class="absolute inset-0 z-10 w-full h-full -scale-x-100"></canvas>
             
             <div class="absolute top-3 left-3 z-20 bg-slate-800/90 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-700">
@@ -70,7 +70,7 @@
 
         <div class="mt-4 w-full">
             <button id="save-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow-lg transition text-sm">
-                Simpan Squat
+                Simpan ke Google Sheets
             </button>
         </div>
     </div>
@@ -104,7 +104,8 @@
         let currentUserName = "";
         let cameraInstance = null;
 
-        checkBtn.addEventListener('click', async () => {
+        // Dioptimalkan agar langsung membuka popup secara instan tanpa menunggu jaringan Google Sheets
+        checkBtn.addEventListener('click', () => {
             const name = userInput.value.trim();
             if (!name) {
                 alert("Silakan masukkan nama Anda terlebih dahulu!");
@@ -112,28 +113,23 @@
                 return;
             }
             currentUserName = name;
-            checkBtn.innerText = "Memeriksa...";
-            checkBtn.disabled = true;
 
-            try {
-                let response = await fetch(`${APPS_SCRIPT_URL}?action=checkUser&nama=${encodeURIComponent(name)}`);
-                let data = await response.json();
+            // Tampilkan modal secara instan
+            modalName.innerText = `Halo, ${name}!`;
+            modalToday.innerText = "0";
+            modalTotal.innerText = "0";
+            infoModal.classList.remove('hidden');
 
-                modalName.innerText = `Halo, ${data.nama}!`;
-                modalToday.innerText = data.todayReps;
-                modalTotal.innerText = data.totalReps;
-                
-                infoModal.classList.remove('hidden');
-            } catch (err) {
-                console.error(err);
-                modalName.innerText = `Halo, ${name}!`;
-                modalToday.innerText = 0;
-                modalTotal.innerText = 0;
-                infoModal.classList.remove('hidden');
-            } finally {
-                checkBtn.innerText = "Mulai / Cek Rekor";
-                checkBtn.disabled = false;
-            }
+            // Ambil data rekor di latar belakang (background fetch) agar terasa sangat cepat
+            fetch(`${APPS_SCRIPT_URL}?action=checkUser&nama=${encodeURIComponent(name)}`)
+                .then(res => res.json())
+                .then(data => {
+                    modalToday.innerText = data.todayReps || 0;
+                    modalTotal.innerText = data.totalReps || 0;
+                })
+                .catch(err => {
+                    console.log("Gagal memuat rekor online, menggunakan nilai default:", err);
+                });
         });
 
         closeModalBtn.addEventListener('click', () => {
@@ -173,6 +169,7 @@
             return angle;
         }
 
+        // Logika diperketat agar tidak sensitif terhadap gerakan tangan/kepala/badan
         function onResults(results) {
             canvasElement.width = videoElement.videoWidth || 640;
             canvasElement.height = videoElement.videoHeight || 480;
@@ -182,24 +179,52 @@
 
             if (results.poseLandmarks) {
                 const landmarks = results.poseLandmarks;
-                const hip = landmarks[24];
-                const knee = landmarks[26];
-                const ankle = landmarks[28];
+                
+                // Ambil titik kaki kiri dan kanan untuk kalkulasi yang lebih stabil
+                const leftHip = landmarks[23];
+                const leftKnee = landmarks[25];
+                const leftAnkle = landmarks[27];
+                
+                const rightHip = landmarks[24];
+                const rightKnee = landmarks[26];
+                const rightAnkle = landmarks[28];
 
-                if (hip && knee && ankle && hip.visibility > 0.4 && knee.visibility > 0.4 && ankle.visibility > 0.4) {
+                // Pilih sisi yang visibilitasnya lebih baik
+                let hip, knee, ankle;
+                if ((leftHip && leftHip.visibility > 0.5) && (rightHip && rightHip.visibility > 0.5)) {
+                    // Ambil rata-rata atau pilih salah satu sisi yang dominan
+                    hip = leftHip.y < rightHip.y ? leftHip : rightHip; // Ambil yang lebih lengkap
+                }
+                
+                // Menggunakan sisi kiri sebagai prioritas standar, pastikan visibility tinggi (>0.6)
+                if (leftHip && leftKnee && leftAnkle && leftHip.visibility > 0.6 && leftKnee.visibility > 0.6 && leftAnkle.visibility > 0.6) {
+                    hip = leftHip;
+                    knee = leftKnee;
+                    ankle = leftAnkle;
+                } else if (rightHip && rightKnee && rightAnkle && rightHip.visibility > 0.6 && rightKnee.visibility > 0.6 && rightAnkle.visibility > 0.6) {
+                    hip = rightHip;
+                    knee = rightKnee;
+                    ankle = rightAnkle;
+                }
+
+                if (hip && knee && ankle) {
                     let angle = calculateAngle(hip, knee, ankle);
 
-                    if (angle > 140) {
+                    // Validasi tambahan: Pastikan posisi pinggul benar-benar di atas lutut secara vertikal (mencegah false trigger dari gerakan tangan/kepala)
+                    // Koordinat y MediaPipe semakin ke bawah semakin besar nilainya.
+                    let isBodyUpright = hip.y < knee.y; 
+
+                    if (angle > 150 && isBodyUpright) {
                         stage = "up";
                         statusElement.innerText = "Berdiri (Up)";
                         statusElement.className = "text-xs font-bold text-emerald-400";
-                    } else if (angle < 110 && stage === "up") {
+                    } else if (angle < 95 && stage === "up") {
                         stage = "down";
                         statusElement.innerText = "Jongkok (Down)";
                         statusElement.className = "text-xs font-bold text-blue-400";
                         squatCount++;
                         counterElement.innerText = squatCount;
-                    } else if (angle >= 110 && angle <= 140) {
+                    } else if (angle >= 95 && angle <= 150) {
                         if (stage === "down") {
                             statusElement.innerText = "Naik / Turun...";
                             statusElement.className = "text-xs font-bold text-yellow-400";
@@ -252,23 +277,20 @@
                 modelComplexity: 0,
                 smoothLandmarks: true,
                 enableSegmentation: false,
-                minDetectionConfidence: 0.5,
-                minTrackingConfidence: 0.5
+                minDetectionConfidence: 0.6,
+                minTrackingConfidence: 0.6
             });
 
             pose.onResults(onResults);
 
-            // Konfigurasi resolusi yang lebih bersahabat untuk kamera depan HP agar lebih luas
-            const constraints = {
-                video: {
-                    facingMode: 'user',
-                    width: { ideal: 640, max: 1280 },
-                    height: { ideal: 480, max: 720 }
-                }
-            };
-
             if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                navigator.mediaDevices.getUserMedia(constraints)
+                navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'user',
+                        width: { ideal: 640, max: 1280 },
+                        height: { ideal: 480, max: 720 }
+                    }
+                })
                 .then((stream) => {
                     videoElement.srcObject = stream;
                     videoElement.play();
@@ -287,7 +309,7 @@
                 });
             }
         }
-        // Tombol Simpan: Menyimpan data lalu langsung keluar/menutup halaman
+
         saveButton.addEventListener('click', async () => {
             if (squatCount === 0) {
                 alert("Belum ada squat yang dihitung!");
@@ -307,19 +329,17 @@
                 
                 alert(`Berhasil menyimpan ${squatCount} repetisi untuk ${currentUserName}!`);
                 
-                // Perintah langsung keluar / menutup halaman setelah data sukses terkirim
                 try {
                     window.close();
                 } catch (e) {
                     console.log("Penutupan tab diblokir oleh browser.");
                 }
-                // Fallback jika browser membatasi window.close()
                 window.location.href = "about:blank";
 
             } catch (error) {
                 console.error("Gagal menyimpan:", error);
                 alert("Terjadi kesalahan saat menyimpan data.");
-                saveButton.innerText = "Simpan Squat";
+                saveButton.innerText = "Simpan ke Google Sheets";
                 saveButton.disabled = false;
             }
         });
