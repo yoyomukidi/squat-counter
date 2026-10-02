@@ -7,6 +7,13 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+    <style>
+        /* Mengatur agar video sedikit diperkecil/zoom-out secara visual (sekitar 0.6x - 0.7x) */
+        .camera-zoom {
+            transform: scale(0.65) scaleX(-1); /* scale 0.65 membuat sudut pandang lebih luas/mundur */
+            transform-origin: center center;
+        }
+    </style>
 </head>
 <body class="bg-slate-900 text-white font-sans flex flex-col items-center justify-center min-h-screen p-4">
 
