@@ -7,13 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
-    <style>
-        /* Mengatur agar video sedikit diperkecil/zoom-out secara visual (sekitar 0.6x - 0.7x) */
-        .camera-zoom {
-            transform: scale(0.65) scaleX(-1); /* scale 0.65 membuat sudut pandang lebih luas/mundur */
-            transform-origin: center center;
-        }
-    </style>
 </head>
 <body class="bg-slate-900 text-white font-sans flex flex-col items-center justify-center min-h-screen p-4">
 
@@ -61,10 +54,8 @@
         </div>
 
         <div class="relative w-full bg-black rounded-xl overflow-hidden shadow-2xl flex justify-center items-center aspect-[3/4]">
-            <!-- Video diperkecil menggunakan kelas .camera-zoom agar sudut pandang lebih luas -->
-            <video id="webcam" class="absolute inset-0 w-full h-full object-cover camera-zoom" autoplay playsinline></video>
-            <!-- Canvas juga disesuaikan cerminnya agar pas dengan video -->
-            <canvas id="output_canvas" class="absolute inset-0 z-10 w-full h-full camera-zoom"></canvas>
+            <video id="webcam" class="absolute inset-0 w-full h-full object-cover -scale-x-100" autoplay playsinline></video>
+            <canvas id="output_canvas" class="absolute inset-0 z-10 w-full h-full -scale-x-100"></canvas>
             
             <div class="absolute top-3 left-3 z-20 bg-slate-800/90 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-700">
                 <p class="text-[10px] text-slate-400">STATUS</p>
@@ -79,7 +70,7 @@
 
         <div class="mt-4 w-full">
             <button id="save-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow-lg transition text-sm">
-                Simpan Squat
+                Simpan ke Google Sheets
             </button>
         </div>
     </div>
@@ -271,12 +262,13 @@
                 onFrame: async () => {
                     await pose.send({image: videoElement});
                 },
-                width: 480,
-                height: 640
+                width: 960,
+                height: 1280
             });
             cameraInstance.start();
         }
 
+        // Tombol Simpan: Menyimpan data lalu langsung keluar/menutup halaman
         saveButton.addEventListener('click', async () => {
             if (squatCount === 0) {
                 alert("Belum ada squat yang dihitung!");
@@ -296,17 +288,19 @@
                 
                 alert(`Berhasil menyimpan ${squatCount} repetisi untuk ${currentUserName}!`);
                 
+                // Perintah langsung keluar / menutup halaman setelah data sukses terkirim
                 try {
                     window.close();
                 } catch (e) {
                     console.log("Penutupan tab diblokir oleh browser.");
                 }
+                // Fallback jika browser membatasi window.close()
                 window.location.href = "about:blank";
 
             } catch (error) {
                 console.error("Gagal menyimpan:", error);
                 alert("Terjadi kesalahan saat menyimpan data.");
-                saveButton.innerText = "Simpan Squat";
+                saveButton.innerText = "Simpan ke Google Sheets";
                 saveButton.disabled = false;
             }
         });
