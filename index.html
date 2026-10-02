@@ -70,7 +70,7 @@
 
         <div class="mt-4 w-full">
             <button id="save-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow-lg transition text-sm">
-                Simpan ke Google Sheets
+                Simpan Squat
             </button>
         </div>
     </div>
@@ -258,20 +258,19 @@
 
             pose.onResults(onResults);
 
-            // Menggunakan getUserMedia standar agar resolusi & sudut pandang wide kamera HP benar-benar aktif
+            // Ubah resolusi menjadi vertikal (portrait) dengan lebar yang lebih luas agar mencakup area lebih banyak
             if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                 navigator.mediaDevices.getUserMedia({
                     video: {
                         facingMode: 'user',
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
+                        width: { ideal: 720, min: 640 },
+                        height: { ideal: 1280, min: 480 }
                     }
                 })
                 .then((stream) => {
                     videoElement.srcObject = stream;
                     videoElement.play();
 
-                    // Mengirim frame video secara kontinu ke MediaPipe Pose
                     async function sendVideoFrame() {
                         if (videoElement.readyState >= 2) {
                             await pose.send({ image: videoElement });
@@ -286,7 +285,6 @@
                 });
             }
         }
-
         // Tombol Simpan: Menyimpan data lalu langsung keluar/menutup halaman
         saveButton.addEventListener('click', async () => {
             if (squatCount === 0) {
@@ -319,7 +317,7 @@
             } catch (error) {
                 console.error("Gagal menyimpan:", error);
                 alert("Terjadi kesalahan saat menyimpan data.");
-                saveButton.innerText = "Simpan ke Google Sheets";
+                saveButton.innerText = "Simpan Squat";
                 saveButton.disabled = false;
             }
         });
