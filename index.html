@@ -54,7 +54,7 @@
         </div>
 
         <div class="relative w-full bg-black rounded-xl overflow-hidden shadow-2xl flex justify-center items-center aspect-[3/4]">
-            <video id="webcam" class="absolute inset-0 w-full h-full object-cover -scale-x-100" autoplay playsinline></video>
+            <video id="webcam" class="absolute inset-0 w-full h-full object-contain -scale-x-100" autoplay playsinline></video>
             <canvas id="output_canvas" class="absolute inset-0 z-10 w-full h-full -scale-x-100"></canvas>
             
             <div class="absolute top-3 left-3 z-20 bg-slate-800/90 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-700">
@@ -258,15 +258,17 @@
 
             pose.onResults(onResults);
 
-            // Ubah resolusi menjadi vertikal (portrait) dengan lebar yang lebih luas agar mencakup area lebih banyak
+            // Konfigurasi resolusi yang lebih bersahabat untuk kamera depan HP agar lebih luas
+            const constraints = {
+                video: {
+                    facingMode: 'user',
+                    width: { ideal: 640, max: 1280 },
+                    height: { ideal: 480, max: 720 }
+                }
+            };
+
             if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                navigator.mediaDevices.getUserMedia({
-                    video: {
-                        facingMode: 'user',
-                        width: { ideal: 720, min: 640 },
-                        height: { ideal: 1280, min: 480 }
-                    }
-                })
+                navigator.mediaDevices.getUserMedia(constraints)
                 .then((stream) => {
                     videoElement.srcObject = stream;
                     videoElement.play();
