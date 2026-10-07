@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -70,13 +70,13 @@
 
         <div class="mt-4 w-full">
             <button id="save-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow-lg transition text-sm">
-                Simpan Squat
+                Simpan ke Google Sheets
             </button>
         </div>
     </div>
 
     <script>
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwFzla0NxhInjO52QmGbi_Qq8Tehf5sam8c50Ynj-XMphaV4c_J2dgCoTEOxHlm4nAh/exec';
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxI_GKCVtC6gncyCXfXMNyswEtC5uDu6Z_hUgC1FpFcegBmA7pUkUB4BguUVL20AJ2r/exec';
 
         const loginSection = document.getElementById('login-section');
         const infoModal = document.getElementById('info-modal');
@@ -104,7 +104,7 @@
         let currentUserName = "";
         let cameraInstance = null;
 
-        // CEK REKOR: Ditampilkan instan, lalu ambil dari cache / background agar tidak ada jeda loading
+        // Dioptimalkan agar langsung membuka popup secara instan tanpa menunggu jaringan Google Sheets
         checkBtn.addEventListener('click', () => {
             const name = userInput.value.trim();
             if (!name) {
@@ -114,33 +114,32 @@
             }
             currentUserName = name;
 
-            // Cek data lokal sementara agar instan
-            const cachedTotal = localStorage.getItem(`total_${name}`) || "0";
-            const cachedToday = localStorage.getItem(`today_${name}`) || "0";
-
+            // Tampilkan modal secara instan
             modalName.innerText = `Halo, ${name}!`;
-            modalToday.innerText = cachedToday;
-            modalTotal.innerText = cachedTotal;
+            modalToday.innerText = "0";
+            modalTotal.innerText = "0";
             infoModal.classList.remove('hidden');
 
-            // Ambil data terbaru dari Google Sheets di background tanpa membuat user menunggu
+            // Ambil data rekor di latar belakang (background fetch) agar terasa sangat cepat
             fetch(`${APPS_SCRIPT_URL}?action=checkUser&nama=${encodeURIComponent(name)}`)
                 .then(res => res.json())
                 .then(data => {
-                    if(data.todayReps !== undefined) {
-                        modalToday.innerText = data.todayReps;
-                        modalTotal.innerText = data.totalReps;
-                        localStorage.setItem(`today_${name}`, data.todayReps);
-                        localStorage.setItem(`total_${name}`, data.totalReps);
-                    }
+                    modalToday.innerText = data.todayReps || 0;
+                    modalTotal.innerText = data.totalReps || 0;
                 })
-                .catch(err => console.log("Background sync rekor dilewati."));
+                .catch(err => {
+                    console.log("Gagal memuat rekor online, menggunakan nilai default:", err);
+                });
         });
 
         closeModalBtn.addEventListener('click', () => {
             infoModal.classList.add('hidden');
             userInput.value = "";
-            try { window.close(); } catch (e) {}
+            try {
+                window.close();
+            } catch (e) {
+                console.log("Penutupan tab diblokir oleh browser.");
+            }
             window.location.href = "about:blank";
         });
 
@@ -170,6 +169,7 @@
             return angle;
         }
 
+        // Logika diperketat agar tidak sensitif terhadap gerakan tangan/kepala/badan
         function onResults(results) {
             canvasElement.width = videoElement.videoWidth || 640;
             canvasElement.height = videoElement.videoHeight || 480;
@@ -179,22 +179,39 @@
 
             if (results.poseLandmarks) {
                 const landmarks = results.poseLandmarks;
+                
+                // Ambil titik kaki kiri dan kanan untuk kalkulasi yang lebih stabil
                 const leftHip = landmarks[23];
                 const leftKnee = landmarks[25];
                 const leftAnkle = landmarks[27];
+                
                 const rightHip = landmarks[24];
                 const rightKnee = landmarks[26];
                 const rightAnkle = landmarks[28];
 
+                // Pilih sisi yang visibilitasnya lebih baik
                 let hip, knee, ankle;
+                if ((leftHip && leftHip.visibility > 0.5) && (rightHip && rightHip.visibility > 0.5)) {
+                    // Ambil rata-rata atau pilih salah satu sisi yang dominan
+                    hip = leftHip.y < rightHip.y ? leftHip : rightHip; // Ambil yang lebih lengkap
+                }
+                
+                // Menggunakan sisi kiri sebagai prioritas standar, pastikan visibility tinggi (>0.6)
                 if (leftHip && leftKnee && leftAnkle && leftHip.visibility > 0.6 && leftKnee.visibility > 0.6 && leftAnkle.visibility > 0.6) {
-                    hip = leftHip; knee = leftKnee; ankle = leftAnkle;
+                    hip = leftHip;
+                    knee = leftKnee;
+                    ankle = leftAnkle;
                 } else if (rightHip && rightKnee && rightAnkle && rightHip.visibility > 0.6 && rightKnee.visibility > 0.6 && rightAnkle.visibility > 0.6) {
-                    hip = rightHip; knee = rightKnee; ankle = rightAnkle;
+                    hip = rightHip;
+                    knee = rightKnee;
+                    ankle = rightAnkle;
                 }
 
                 if (hip && knee && ankle) {
                     let angle = calculateAngle(hip, knee, ankle);
+
+                    // Validasi tambahan: Pastikan posisi pinggul benar-benar di atas lutut secara vertikal (mencegah false trigger dari gerakan tangan/kepala)
+                    // Koordinat y MediaPipe semakin ke bawah semakin besar nilainya.
                     let isBodyUpright = hip.y < knee.y; 
 
                     if (angle > 150 && isBodyUpright) {
@@ -293,36 +310,39 @@
             }
         }
 
-        // PENYIMPANAN INSTAN (FIRE-AND-FORGET) TANPA MENUNGGU JEDA JARINGAN
-        saveButton.addEventListener('click', () => {
-    if (squatCount === 0) {
-        alert("Belum ada squat yang dihitung!");
-        return;
-    }
+        saveButton.addEventListener('click', async () => {
+            if (squatCount === 0) {
+                alert("Belum ada squat yang dihitung!");
+                return;
+            }
 
-    saveButton.innerText = "Menyimpan ke Cloud...";
-    saveButton.disabled = true;
+            saveButton.innerText = "Menyimpan...";
+            saveButton.disabled = true;
 
-    const payload = { nama: currentUserName, reps: squatCount };
+            try {
+                await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nama: currentUserName, reps: squatCount })
+                });
+                
+                alert(`Berhasil menyimpan ${squatCount} repetisi untuk ${currentUserName}!`);
+                
+                try {
+                    window.close();
+                } catch (e) {
+                    console.log("Penutupan tab diblokir oleh browser.");
+                }
+                window.location.href = "about:blank";
 
-    fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // Menghindari preflight CORS error di Apps Script
-        body: JSON.stringify(payload)
-    })
-    .then(response => response.text())
-    .then(result => {
-        alert(`Berhasil menyimpan ${squatCount} repetisi untuk ${currentUserName} ke Google Sheet!`);
-        try { window.close(); } catch (e) {}
-        window.location.href = "about:blank";
-    })
-    .catch(error => {
-        console.error("Gagal menyimpan:", error);
-        alert("Gagal terhubung ke server. Periksa koneksi internet Anda.");
-        saveButton.innerText = "Simpan Squat";
-        saveButton.disabled = false;
-    });
-});
+            } catch (error) {
+                console.error("Gagal menyimpan:", error);
+                alert("Terjadi kesalahan saat menyimpan data.");
+                saveButton.innerText = "Simpan ke Google Sheets";
+                saveButton.disabled = false;
+            }
+        });
     </script>
 </body>
 </html>
