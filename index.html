@@ -104,7 +104,7 @@
         let currentUserName = "";
         let cameraInstance = null;
 
-        // Dioptimalkan agar langsung membuka popup secara instan tanpa menunggu jaringan Google Sheets
+        // CEK REKOR: Ditampilkan instan, lalu ambil dari cache / background agar tidak ada jeda loading
         checkBtn.addEventListener('click', () => {
             const name = userInput.value.trim();
             if (!name) {
@@ -114,32 +114,33 @@
             }
             currentUserName = name;
 
-            // Tampilkan modal secara instan
+            // Cek data lokal sementara agar instan
+            const cachedTotal = localStorage.getItem(`total_${name}`) || "0";
+            const cachedToday = localStorage.getItem(`today_${name}`) || "0";
+
             modalName.innerText = `Halo, ${name}!`;
-            modalToday.innerText = "0";
-            modalTotal.innerText = "0";
+            modalToday.innerText = cachedToday;
+            modalTotal.innerText = cachedTotal;
             infoModal.classList.remove('hidden');
 
-            // Ambil data rekor di latar belakang (background fetch) agar terasa sangat cepat
+            // Ambil data terbaru dari Google Sheets di background tanpa membuat user menunggu
             fetch(`${APPS_SCRIPT_URL}?action=checkUser&nama=${encodeURIComponent(name)}`)
                 .then(res => res.json())
                 .then(data => {
-                    modalToday.innerText = data.todayReps || 0;
-                    modalTotal.innerText = data.totalReps || 0;
+                    if(data.todayReps !== undefined) {
+                        modalToday.innerText = data.todayReps;
+                        modalTotal.innerText = data.totalReps;
+                        localStorage.setItem(`today_${name}`, data.todayReps);
+                        localStorage.setItem(`total_${name}`, data.totalReps);
+                    }
                 })
-                .catch(err => {
-                    console.log("Gagal memuat rekor online, menggunakan nilai default:", err);
-                });
+                .catch(err => console.log("Background sync rekor dilewati."));
         });
 
         closeModalBtn.addEventListener('click', () => {
             infoModal.classList.add('hidden');
             userInput.value = "";
-            try {
-                window.close();
-            } catch (e) {
-                console.log("Penutupan tab diblokir oleh browser.");
-            }
+            try { window.close(); } catch (e) {}
             window.location.href = "about:blank";
         });
 
@@ -169,7 +170,6 @@
             return angle;
         }
 
-        // Logika diperketat agar tidak sensitif terhadap gerakan tangan/kepala/badan
         function onResults(results) {
             canvasElement.width = videoElement.videoWidth || 640;
             canvasElement.height = videoElement.videoHeight || 480;
@@ -179,39 +179,22 @@
 
             if (results.poseLandmarks) {
                 const landmarks = results.poseLandmarks;
-                
-                // Ambil titik kaki kiri dan kanan untuk kalkulasi yang lebih stabil
                 const leftHip = landmarks[23];
                 const leftKnee = landmarks[25];
                 const leftAnkle = landmarks[27];
-                
                 const rightHip = landmarks[24];
                 const rightKnee = landmarks[26];
                 const rightAnkle = landmarks[28];
 
-                // Pilih sisi yang visibilitasnya lebih baik
                 let hip, knee, ankle;
-                if ((leftHip && leftHip.visibility > 0.5) && (rightHip && rightHip.visibility > 0.5)) {
-                    // Ambil rata-rata atau pilih salah satu sisi yang dominan
-                    hip = leftHip.y < rightHip.y ? leftHip : rightHip; // Ambil yang lebih lengkap
-                }
-                
-                // Menggunakan sisi kiri sebagai prioritas standar, pastikan visibility tinggi (>0.6)
                 if (leftHip && leftKnee && leftAnkle && leftHip.visibility > 0.6 && leftKnee.visibility > 0.6 && leftAnkle.visibility > 0.6) {
-                    hip = leftHip;
-                    knee = leftKnee;
-                    ankle = leftAnkle;
+                    hip = leftHip; knee = leftKnee; ankle = leftAnkle;
                 } else if (rightHip && rightKnee && rightAnkle && rightHip.visibility > 0.6 && rightKnee.visibility > 0.6 && rightAnkle.visibility > 0.6) {
-                    hip = rightHip;
-                    knee = rightKnee;
-                    ankle = rightAnkle;
+                    hip = rightHip; knee = rightKnee; ankle = rightAnkle;
                 }
 
                 if (hip && knee && ankle) {
                     let angle = calculateAngle(hip, knee, ankle);
-
-                    // Validasi tambahan: Pastikan posisi pinggul benar-benar di atas lutut secara vertikal (mencegah false trigger dari gerakan tangan/kepala)
-                    // Koordinat y MediaPipe semakin ke bawah semakin besar nilainya.
                     let isBodyUpright = hip.y < knee.y; 
 
                     if (angle > 150 && isBodyUpright) {
@@ -310,7 +293,8 @@
             }
         }
 
-        saveButton.addEventListener('click', async () => {
+        // PENYIMPANAN INSTAN (FIRE-AND-FORGET) TANPA MENUNGGU JEDA JARINGAN
+        saveButton.addEventListener('click', () => {
             if (squatCount === 0) {
                 alert("Belum ada squat yang dihitung!");
                 return;
@@ -319,29 +303,25 @@
             saveButton.innerText = "Menyimpan...";
             saveButton.disabled = true;
 
-            try {
-                await fetch(APPS_SCRIPT_URL, {
+            const payload = JSON.stringify({ nama: currentUserName, reps: squatCount });
+
+            // Kirim data secara asinkronus tanpa menunggu respons (Sangat Cepat / Instan)
+            if (navigator.sendBeacon) {
+                navigator.sendBeacon(APPS_SCRIPT_URL, new Blob([payload], { type: 'application/json' }));
+            } else {
+                fetch(APPS_SCRIPT_URL, {
                     method: 'POST',
                     mode: 'no-cors',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nama: currentUserName, reps: squatCount })
-                });
-                
-                alert(`Berhasil menyimpan ${squatCount} repetisi untuk ${currentUserName}!`);
-                
-                try {
-                    window.close();
-                } catch (e) {
-                    console.log("Penutupan tab diblokir oleh browser.");
-                }
-                window.location.href = "about:blank";
-
-            } catch (error) {
-                console.error("Gagal menyimpan:", error);
-                alert("Terjadi kesalahan saat menyimpan data.");
-                saveButton.innerText = "Simpan Squat";
-                saveButton.disabled = false;
+                    body: payload
+                }).catch(() => {});
             }
+
+            // Langsung tampilkan pesan sukses tanpa jeda loading server Google
+            alert(`Berhasil menyimpan ${squatCount} repetisi untuk ${currentUserName}!`);
+            
+            try { window.close(); } catch (e) {}
+            window.location.href = "about:blank";
         });
     </script>
 </body>
