@@ -295,34 +295,34 @@
 
         // PENYIMPANAN INSTAN (FIRE-AND-FORGET) TANPA MENUNGGU JEDA JARINGAN
         saveButton.addEventListener('click', () => {
-            if (squatCount === 0) {
-                alert("Belum ada squat yang dihitung!");
-                return;
-            }
+    if (squatCount === 0) {
+        alert("Belum ada squat yang dihitung!");
+        return;
+    }
 
-            saveButton.innerText = "Menyimpan...";
-            saveButton.disabled = true;
+    saveButton.innerText = "Menyimpan ke Cloud...";
+    saveButton.disabled = true;
 
-            const payload = JSON.stringify({ nama: currentUserName, reps: squatCount });
+    const payload = { nama: currentUserName, reps: squatCount };
 
-            // Kirim data secara asinkronus tanpa menunggu respons (Sangat Cepat / Instan)
-            if (navigator.sendBeacon) {
-                navigator.sendBeacon(APPS_SCRIPT_URL, new Blob([payload], { type: 'application/json' }));
-            } else {
-                fetch(APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: payload
-                }).catch(() => {});
-            }
-
-            // Langsung tampilkan pesan sukses tanpa jeda loading server Google
-            alert(`Berhasil menyimpan ${squatCount} repetisi untuk ${currentUserName}!`);
-            
-            try { window.close(); } catch (e) {}
-            window.location.href = "about:blank";
-        });
+    fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // Menghindari preflight CORS error di Apps Script
+        body: JSON.stringify(payload)
+    })
+    .then(response => response.text())
+    .then(result => {
+        alert(`Berhasil menyimpan ${squatCount} repetisi untuk ${currentUserName} ke Google Sheet!`);
+        try { window.close(); } catch (e) {}
+        window.location.href = "about:blank";
+    })
+    .catch(error => {
+        console.error("Gagal menyimpan:", error);
+        alert("Gagal terhubung ke server. Periksa koneksi internet Anda.");
+        saveButton.innerText = "Simpan Squat";
+        saveButton.disabled = false;
+    });
+});
     </script>
 </body>
 </html>
