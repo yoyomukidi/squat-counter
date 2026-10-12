@@ -1,92 +1,174 @@
-<!<!DOCTYPE html>
+
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web-based Squat Counter Challenge</title>
+    <title>AI Squat Counter Challenge</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
 </head>
+
 <body class="bg-slate-900 text-white font-sans flex flex-col items-center justify-center min-h-screen p-4">
 
     <h1 class="text-xl font-bold mb-4">AI Squat Challenge 🤖</h1>
 
-    <!-- TAHAP 1: INPUT NAMA & CEK REKOR -->
+    <!-- INPUT NAMA -->
     <div id="login-section" class="w-full max-w-md bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl">
-        <label class="block text-xs font-bold text-slate-300 mb-2">MASUKKAN NAMA PESERTA</label>
-        <input type="text" id="username" placeholder="Contoh: Budi Santoso" 
-            class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500 mb-4">
-        <button id="check-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow transition text-sm">
+        <label class="block text-xs font-bold text-slate-300 mb-2">
+            MASUKKAN NAMA PESERTA
+        </label>
+        <input type="text" id="username" placeholder="Contoh: Budi Santoso"
+            class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm mb-4">
+
+        <button id="check-btn"
+            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl text-sm">
             Mulai / Cek Rekor
         </button>
     </div>
 
-    <!-- TAHAP 2: POPUP INFORMASI REKOR -->
-    <div id="info-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-slate-800 border border-slate-700 w-full max-w-sm rounded-2xl p-6 text-center shadow-2xl">
-            <h3 class="text-lg font-bold text-emerald-400 mb-1" id="modal-name">Halo!</h3>
-            <p class="text-xs text-slate-400 mb-6">Berikut ringkasan squat Anda:</p>
-            
-            <div class="grid grid-cols-2 gap-3 mb-6">
+    <!-- POPUP REKOR -->
+    <div id="info-modal"
+        class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-3">
+
+        <div class="bg-slate-800 border border-slate-700 w-full max-w-sm rounded-2xl p-5 text-center shadow-2xl max-h-[95vh] overflow-y-auto">
+
+            <h3 id="modal-name" class="text-lg font-bold text-emerald-400 mb-1">
+                Halo!
+            </h3>
+
+            <p class="text-xs text-slate-400 mb-5">
+                Berikut ringkasan squat Anda:
+            </p>
+
+            <!-- REKOR PRIBADI -->
+            <div class="grid grid-cols-2 gap-3 mb-5">
+
                 <div class="bg-slate-900 p-3 rounded-xl border border-slate-700/50">
-                    <p class="text-[10px] text-slate-400">Hari Ini</p>
-                    <p class="text-2xl font-black text-emerald-400" id="modal-today">0</p>
+                    <p class="text-xs text-slate-400">Rekor Hari Ini</p>
+                    <p id="modal-today" class="text-2xl font-black text-emerald-400">0</p>
                 </div>
+
                 <div class="bg-slate-900 p-3 rounded-xl border border-slate-700/50">
-                    <p class="text-[10px] text-slate-400">Total Keseluruhan</p>
-                    <p class="text-2xl font-black text-blue-400" id="modal-total">0</p>
+                    <p class="text-xs text-slate-400">Total Keseluruhan</p>
+                    <p id="modal-total" class="text-2xl font-black text-blue-400">0</p>
                 </div>
+
+            </div>
+
+            <!-- LEADERBOARD -->
+            <div class="text-left mb-5">
+
+                <div class="flex items-center justify-between mb-2">
+                    <h4 class="text-sm font-bold text-white">
+                        🏆 Rekor Semua Peserta
+                    </h4>
+                    <span class="text-xs text-slate-400">Total squat</span>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-700 rounded-xl overflow-hidden">
+                    <div class="max-h-56 overflow-y-auto">
+
+                        <table class="w-full text-sm">
+                            <thead class="sticky top-0 bg-slate-700 text-slate-300 text-xs">
+                                <tr>
+                                    <th class="px-3 py-2 text-left">No.</th>
+                                    <th class="px-3 py-2 text-left">Nama</th>
+                                    <th class="px-3 py-2 text-right">Repetisi</th>
+                                </tr>
+                            </thead>
+
+                            <tbody id="leaderboard-body">
+                                <tr>
+                                    <td colspan="3" class="px-3 py-4 text-center text-slate-400">
+                                        Memuat rekor peserta...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                    </div>
+                </div>
+
+                <p id="leaderboard-status" class="text-xs text-slate-500 mt-2"></p>
             </div>
 
             <div class="flex gap-3">
-                <button id="close-modal-btn" class="w-1/2 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2.5 rounded-xl text-sm">Tutup</button>
-                <button id="start-challenge-btn" class="w-1/2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-xl text-sm">Lanjutkan</button>
+                <button id="close-modal-btn"
+                    class="w-1/2 bg-slate-700 hover:bg-slate-600 py-2.5 rounded-xl text-sm">
+                    Tutup
+                </button>
+
+                <button id="start-challenge-btn"
+                    class="w-1/2 bg-emerald-600 hover:bg-emerald-700 py-2.5 rounded-xl text-sm font-semibold">
+                    Lanjutkan
+                </button>
             </div>
+
         </div>
     </div>
 
-    <!-- TAHAP 3: AREA KAMERA & SQUAT COUNTER -->
+    <!-- KAMERA DAN COUNTER -->
     <div id="app-section" class="hidden flex flex-col items-center w-full max-w-md">
+
         <div class="w-full mb-2 text-xs text-slate-400 flex justify-between items-center bg-slate-800 px-3 py-2 rounded-lg">
             <span>Peserta: <strong id="active-user-display" class="text-white"></strong></span>
-            <button id="change-user-btn" class="text-blue-400 underline text-[11px]">Ganti Nama</button>
+            <button id="change-user-btn" class="text-blue-400 underline text-xs">
+                Ganti Nama
+            </button>
         </div>
 
         <div class="relative w-full bg-black rounded-xl overflow-hidden shadow-2xl flex justify-center items-center aspect-[3/4]">
-            <video id="webcam" class="absolute inset-0 w-full h-full object-cover -scale-x-100" autoplay playsinline></video>
-            <canvas id="output_canvas" class="absolute inset-0 z-10 w-full h-full -scale-x-100"></canvas>
-            
-            <div class="absolute top-3 left-3 z-20 bg-slate-800/90 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-700">
-                <p class="text-[10px] text-slate-400">STATUS</p>
+
+            <video id="webcam"
+                class="absolute inset-0 w-full h-full object-cover -scale-x-100"
+                style="filter: blur(8px);"
+                autoplay playsinline></video>
+
+            <canvas id="output_canvas"
+                class="absolute inset-0 z-10 w-full h-full -scale-x-100"></canvas>
+
+            <div class="absolute top-3 left-3 z-20 bg-slate-800/90 px-3 py-2 rounded-lg">
+                <p class="text-xs text-slate-400">STATUS</p>
                 <p id="pose-status" class="text-xs font-bold text-yellow-400">Memuat AI...</p>
             </div>
 
-            <div class="absolute top-3 right-3 z-20 bg-slate-800/90 backdrop-blur px-4 py-2 rounded-lg border border-slate-700 text-center shadow-lg">
-                <p class="text-xs text-slate-300 font-semibold tracking-wider">REPS</p>
-                <p id="counter" class="text-5xl font-black text-emerald-400 leading-none mt-1">0</p>
+            <div class="absolute top-3 right-3 z-20 bg-slate-800/90 px-4 py-2 rounded-lg text-center">
+                <p class="text-xs text-slate-300 font-semibold">REPS</p>
+                <p id="counter" class="text-5xl font-black text-emerald-400">0</p>
             </div>
+
         </div>
 
         <div class="mt-4 w-full">
-            <button id="save-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow-lg transition text-sm">
+            <button id="save-btn"
+                class="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-xl text-sm font-semibold">
                 Simpan Squat
             </button>
         </div>
+
     </div>
 
     <script>
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxI_GKCVtC6gncyCXfXMNyswEtC5uDu6Z_hUgC1FpFcegBmA7pUkUB4BguUVL20AJ2r/exec';
+        // URL WEB APP GOOGLE APPS SCRIPT
+        const APPS_SCRIPT_URL =
+            'https://script.google.com/macros/s/AKfycbzM18-SH8hH2naJXR6WFRT5RFZv3fq5vj1faJcRxdC_crsyTAqbi0N95o6g2wn93nJ8/exec';
 
         const loginSection = document.getElementById('login-section');
         const infoModal = document.getElementById('info-modal');
         const appSection = document.getElementById('app-section');
-        
+
         const userInput = document.getElementById('username');
         const checkBtn = document.getElementById('check-btn');
+
         const modalName = document.getElementById('modal-name');
         const modalToday = document.getElementById('modal-today');
         const modalTotal = document.getElementById('modal-total');
+
+        const leaderboardBody = document.getElementById('leaderboard-body');
+        const leaderboardStatus = document.getElementById('leaderboard-status');
+
         const closeModalBtn = document.getElementById('close-modal-btn');
         const startChallengeBtn = document.getElementById('start-challenge-btn');
         const activeUserDisplay = document.getElementById('active-user-display');
@@ -95,6 +177,7 @@
         const videoElement = document.getElementById('webcam');
         const canvasElement = document.getElementById('output_canvas');
         const canvasCtx = canvasElement.getContext('2d');
+
         const counterElement = document.getElementById('counter');
         const statusElement = document.getElementById('pose-status');
         const saveButton = document.getElementById('save-btn');
@@ -102,74 +185,213 @@
         let squatCount = 0;
         let stage = null;
         let currentUserName = "";
-        let cameraInstance = null;
+        let cameraStarted = false;
 
-        // Dioptimalkan agar langsung membuka popup secara instan tanpa menunggu jaringan Google Sheets
-        checkBtn.addEventListener('click', () => {
+        // ==========================================
+        // CEK REKOR PESERTA
+        // ==========================================
+        checkBtn.addEventListener('click', async function () {
             const name = userInput.value.trim();
+
             if (!name) {
                 alert("Silakan masukkan nama Anda terlebih dahulu!");
                 userInput.focus();
                 return;
             }
+
             currentUserName = name;
 
-            // Tampilkan modal secara instan
             modalName.innerText = `Halo, ${name}!`;
-            modalToday.innerText = "0";
-            modalTotal.innerText = "0";
+            modalToday.innerText = "...";
+            modalTotal.innerText = "...";
+
+            leaderboardBody.innerHTML = `
+                <tr>
+                    <td colspan="3" class="px-3 py-4 text-center text-slate-400">
+                        Memuat rekor peserta...
+                    </td>
+                </tr>`;
+
+            leaderboardStatus.innerText = "";
             infoModal.classList.remove('hidden');
 
-            // Ambil data rekor di latar belakang (background fetch) agar terasa sangat cepat
-            fetch(`${APPS_SCRIPT_URL}?action=checkUser&nama=${encodeURIComponent(name)}`)
-                .then(res => res.json())
-                .then(data => {
-                    modalToday.innerText = data.todayReps || 0;
-                    modalTotal.innerText = data.totalReps || 0;
-                })
-                .catch(err => {
-                    console.log("Gagal memuat rekor online, menggunakan nilai default:", err);
-                });
-        });
-
-        closeModalBtn.addEventListener('click', () => {
-            infoModal.classList.add('hidden');
-            userInput.value = "";
+            // Satu permintaan mengambil rekor pribadi sekaligus leaderboard
             try {
-                window.close();
-            } catch (e) {
-                console.log("Penutupan tab diblokir oleh browser.");
+                const url = `${APPS_SCRIPT_URL}?action=checkUser&nama=${encodeURIComponent(name)}`;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.status === "error") {
+                    throw new Error(data.message || "Gagal mengambil data.");
+                }
+
+                modalToday.innerText = Number(data.todayReps || 0).toLocaleString("id-ID");
+                modalTotal.innerText = Number(data.totalReps || 0).toLocaleString("id-ID");
+
+                renderLeaderboard(data.leaderboard || [], name);
+
+            } catch (error) {
+                console.error("Gagal mengambil data:", error);
+                modalToday.innerText = "—";
+                modalTotal.innerText = "—";
+
+                leaderboardBody.innerHTML = `
+                    <tr>
+                        <td colspan="3" class="px-3 py-4 text-center text-amber-300 text-xs">
+                            Data belum dapat dimuat. Periksa koneksi dan Apps Script.
+                        </td>
+                    </tr>`;
+
+                leaderboardStatus.innerText = error.message || "Gagal mengambil data.";
             }
-            window.location.href = "about:blank";
         });
 
-        startChallengeBtn.addEventListener('click', () => {
+        // ==========================================
+        // MENAMPILKAN LEADERBOARD
+        // ==========================================
+        function renderLeaderboard(records, activeName) {
+            if (!Array.isArray(records) || records.length === 0) {
+                leaderboardBody.innerHTML = `
+                    <tr>
+                        <td colspan="3" class="px-3 py-4 text-center text-slate-400">
+                            Belum ada data rekap.
+                        </td>
+                    </tr>`;
+
+                leaderboardStatus.innerText = "Pastikan sheet rekap memiliki data.";
+                return;
+            }
+
+            // Mendukung properti total atau totalReps
+            records.sort((a, b) =>
+                Number(b.total ?? b.totalReps ?? 0) -
+                Number(a.total ?? a.totalReps ?? 0)
+            );
+
+            leaderboardBody.innerHTML = "";
+
+            records.forEach((record, index) => {
+                const nama = String(record.nama || record.name || "");
+                const total = Number(record.total ?? record.totalReps ?? 0);
+
+                const tr = document.createElement("tr");
+                tr.className = index % 2 === 0
+                    ? "bg-slate-900"
+                    : "bg-slate-800";
+
+                const rankCell = document.createElement("td");
+                rankCell.className = "px-3 py-2 text-slate-400";
+                rankCell.textContent = index + 1;
+
+                const nameCell = document.createElement("td");
+                nameCell.className = "px-3 py-2 text-white break-words";
+                nameCell.textContent = nama;
+
+                if (nama.trim().toLowerCase() === activeName.trim().toLowerCase()) {
+                    nameCell.textContent += " (Anda)";
+                    nameCell.className += " font-bold text-emerald-300";
+                }
+
+                const totalCell = document.createElement("td");
+                totalCell.className = "px-3 py-2 text-right font-bold text-emerald-300";
+                totalCell.textContent = total.toLocaleString("id-ID");
+
+                tr.appendChild(rankCell);
+                tr.appendChild(nameCell);
+                tr.appendChild(totalCell);
+
+                leaderboardBody.appendChild(tr);
+            });
+
+            leaderboardStatus.innerText =
+                `${records.length} peserta • urutan total tertinggi`;
+        }
+
+        // ==========================================
+        // TUTUP POPUP
+        // ==========================================
+        closeModalBtn.addEventListener('click', function () {
+        // Coba tutup tab atau jendela web
+            window.close();
+
+        // Jika browser menolak menutup halaman,
+        // tampilkan petunjuk kepada pengguna.
+            setTimeout(function () {
+            document.body.innerHTML = `
+              <div style="
+                background:#0f172a;
+                color:white;
+                min-height:100vh;
+                display:flex;
+                flex-direction:column;
+                align-items:center;
+                justify-content:center;
+                text-align:center;
+                padding:24px;
+                font-family:Arial,sans-serif;
+                box-sizing:border-box;
+              ">
+                <h2 style="color:#34d399;">
+                    Terima kasih sudah ikut Squat Challenge!
+                </h2>
+                <p>Anda dapat menutup tab atau jendela browser ini.</p>
+              </div>
+              `;
+           }, 300);
+        });
+
+        // ==========================================
+        // MULAI TANTANGAN
+        // ==========================================
+        startChallengeBtn.addEventListener('click', function () {
             infoModal.classList.add('hidden');
             loginSection.classList.add('hidden');
             appSection.classList.remove('hidden');
+
             activeUserDisplay.innerText = currentUserName;
-            
-            if (!cameraInstance) {
+
+            if (!cameraStarted) {
+                cameraStarted = true;
                 initPoseAndCamera();
             }
         });
 
-        changeUserBtn.addEventListener('click', () => {
+        // ==========================================
+        // GANTI NAMA
+        // ==========================================
+        changeUserBtn.addEventListener('click', function () {
             appSection.classList.add('hidden');
             loginSection.classList.remove('hidden');
+
             userInput.value = "";
             squatCount = 0;
-            counterElement.innerText = 0;
+            stage = null;
+            counterElement.innerText = "0";
+            saveButton.disabled = false;
+            saveButton.innerText = "Simpan Squat";
+            userInput.focus();
         });
 
+        // ==========================================
+        // HITUNG SUDUT LUTUT
+        // ==========================================
         function calculateAngle(a, b, c) {
-            let radians = Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(a.y - b.y, a.x - b.x);
-            let angle = Math.abs(radians * 180.0 / Math.PI);
-            if (angle > 180.0) angle = 360.0 - angle;
+            const radians =
+                Math.atan2(c.y - b.y, c.x - b.x) -
+                Math.atan2(a.y - b.y, a.x - b.x);
+
+            let angle = Math.abs(radians * 180 / Math.PI);
+
+            if (angle > 180) {
+                angle = 360 - angle;
+            }
+
             return angle;
         }
 
-        // Logika diperketat agar tidak sensitif terhadap gerakan tangan/kepala/badan
+        // ==========================================
+        // PROSES HASIL MEDIAPIPE
+        // ==========================================
         function onResults(results) {
             canvasElement.width = videoElement.videoWidth || 640;
             canvasElement.height = videoElement.videoHeight || 480;
@@ -179,98 +401,134 @@
 
             if (results.poseLandmarks) {
                 const landmarks = results.poseLandmarks;
-                
-                // Ambil titik kaki kiri dan kanan untuk kalkulasi yang lebih stabil
+
                 const leftHip = landmarks[23];
                 const leftKnee = landmarks[25];
                 const leftAnkle = landmarks[27];
-                
+
                 const rightHip = landmarks[24];
                 const rightKnee = landmarks[26];
                 const rightAnkle = landmarks[28];
 
-                // Pilih sisi yang visibilitasnya lebih baik
                 let hip, knee, ankle;
-                if ((leftHip && leftHip.visibility > 0.5) && (rightHip && rightHip.visibility > 0.5)) {
-                    // Ambil rata-rata atau pilih salah satu sisi yang dominan
-                    hip = leftHip.y < rightHip.y ? leftHip : rightHip; // Ambil yang lebih lengkap
-                }
-                
-                // Menggunakan sisi kiri sebagai prioritas standar, pastikan visibility tinggi (>0.6)
-                if (leftHip && leftKnee && leftAnkle && leftHip.visibility > 0.6 && leftKnee.visibility > 0.6 && leftAnkle.visibility > 0.6) {
+
+                if (
+                    leftHip && leftKnee && leftAnkle &&
+                    leftHip.visibility > 0.6 &&
+                    leftKnee.visibility > 0.6 &&
+                    leftAnkle.visibility > 0.6
+                ) {
                     hip = leftHip;
                     knee = leftKnee;
                     ankle = leftAnkle;
-                } else if (rightHip && rightKnee && rightAnkle && rightHip.visibility > 0.6 && rightKnee.visibility > 0.6 && rightAnkle.visibility > 0.6) {
+
+                } else if (
+                    rightHip && rightKnee && rightAnkle &&
+                    rightHip.visibility > 0.6 &&
+                    rightKnee.visibility > 0.6 &&
+                    rightAnkle.visibility > 0.6
+                ) {
                     hip = rightHip;
                     knee = rightKnee;
                     ankle = rightAnkle;
                 }
 
                 if (hip && knee && ankle) {
-                    let angle = calculateAngle(hip, knee, ankle);
-
-                    // Validasi tambahan: Pastikan posisi pinggul benar-benar di atas lutut secara vertikal (mencegah false trigger dari gerakan tangan/kepala)
-                    // Koordinat y MediaPipe semakin ke bawah semakin besar nilainya.
-                    let isBodyUpright = hip.y < knee.y; 
+                    const angle = calculateAngle(hip, knee, ankle);
+                    const isBodyUpright = hip.y < knee.y;
 
                     if (angle > 150 && isBodyUpright) {
                         stage = "up";
                         statusElement.innerText = "Berdiri (Up)";
-                        statusElement.className = "text-xs font-bold text-emerald-400";
+                        statusElement.className =
+                            "text-xs font-bold text-emerald-400";
+
                     } else if (angle < 95 && stage === "up") {
                         stage = "down";
                         statusElement.innerText = "Jongkok (Down)";
-                        statusElement.className = "text-xs font-bold text-blue-400";
+                        statusElement.className =
+                            "text-xs font-bold text-blue-400";
+
                         squatCount++;
                         counterElement.innerText = squatCount;
+
                     } else if (angle >= 95 && angle <= 150) {
                         if (stage === "down") {
                             statusElement.innerText = "Naik / Turun...";
-                            statusElement.className = "text-xs font-bold text-yellow-400";
+                            statusElement.className =
+                                "text-xs font-bold text-yellow-400";
                         }
                     }
+
                 } else {
                     statusElement.innerText = "Mundurkan Posisi Badan";
-                    statusElement.className = "text-xs font-bold text-red-400";
+                    statusElement.className =
+                        "text-xs font-bold text-red-400";
                 }
+
                 drawCustomSkeleton(landmarks);
+
             } else {
                 statusElement.innerText = "Badan Tidak Terlihat";
-                statusElement.className = "text-xs font-bold text-red-400";
+                statusElement.className =
+                    "text-xs font-bold text-red-400";
             }
+
             canvasCtx.restore();
         }
 
+        // ==========================================
+        // GAMBAR KERANGKA TUBUH
+        // ==========================================
         function drawCustomSkeleton(landmarks) {
-            const connections = [[11, 12], [11, 23], [12, 24], [23, 24], [23, 25], [25, 27], [24, 26], [26, 28]];
-            canvasCtx.strokeStyle = '#10B981';
-            canvasCtx.lineWidth = 3;
+            const connections = [
+                [11, 12], [11, 23], [12, 24], [23, 24],
+                [23, 25], [25, 27], [24, 26], [26, 28]
+            ];
+
+            canvasCtx.strokeStyle = "#10B981";
+            canvasCtx.lineWidth = 5;
 
             connections.forEach(([i, j]) => {
                 const p1 = landmarks[i];
                 const p2 = landmarks[j];
+
                 if (p1 && p2 && p1.visibility > 0.4 && p2.visibility > 0.4) {
                     canvasCtx.beginPath();
-                    canvasCtx.moveTo(p1.x * canvasElement.width, p1.y * canvasElement.height);
-                    canvasCtx.lineTo(p2.x * canvasElement.width, p2.y * canvasElement.height);
+                    canvasCtx.moveTo(
+                        p1.x * canvasElement.width,
+                        p1.y * canvasElement.height
+                    );
+                    canvasCtx.lineTo(
+                        p2.x * canvasElement.width,
+                        p2.y * canvasElement.height
+                    );
                     canvasCtx.stroke();
                 }
             });
 
-            canvasCtx.fillStyle = '#EF4444';
+            canvasCtx.fillStyle = "#EF4444";
+
             landmarks.forEach((landmark) => {
                 if (landmark.visibility > 0.4) {
                     canvasCtx.beginPath();
-                    canvasCtx.arc(landmark.x * canvasElement.width, landmark.y * canvasElement.height, 4, 0, 2 * Math.PI);
+                    canvasCtx.arc(
+                        landmark.x * canvasElement.width,
+                        landmark.y * canvasElement.height,
+                        4, 0, 2 * Math.PI
+                    );
                     canvasCtx.fill();
                 }
             });
         }
 
+        // ==========================================
+        // AKTIFKAN KAMERA
+        // ==========================================
         function initPoseAndCamera() {
             const pose = new Pose({
-                locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
+                locateFile: file =>
+                    `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
             });
 
             pose.setOptions({
@@ -283,52 +541,85 @@
 
             pose.onResults(onResults);
 
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                navigator.mediaDevices.getUserMedia({
-                    video: {
-                        facingMode: 'user',
-                        width: { ideal: 640, max: 1280 },
-                        height: { ideal: 480, max: 720 }
-                    }
-                })
-                .then((stream) => {
-                    videoElement.srcObject = stream;
-                    videoElement.play();
+            if (!navigator.mediaDevices ||
+                !navigator.mediaDevices.getUserMedia) {
+                alert("Browser tidak mendukung akses kamera. Gunakan HTTPS.");
+                cameraStarted = false;
+                return;
+            }
 
+            navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: "user",
+                    width: { ideal: 640, max: 1280 },
+                    height: { ideal: 480, max: 720 }
+                }
+            })
+            .then(stream => {
+                videoElement.srcObject = stream;
+
+                videoElement.play().then(() => {
                     async function sendVideoFrame() {
                         if (videoElement.readyState >= 2) {
-                            await pose.send({ image: videoElement });
+                            try {
+                                await pose.send({ image: videoElement });
+                            } catch (err) {
+                                console.error("Gagal memproses frame:", err);
+                            }
                         }
+
                         requestAnimationFrame(sendVideoFrame);
                     }
+
                     sendVideoFrame();
-                })
-                .catch((err) => {
-                    console.error("Gagal mengakses kamera: ", err);
-                    alert("Tidak dapat mengakses kamera. Pastikan izin kamera telah diberikan.");
                 });
-            }
+            })
+            .catch(err => {
+                console.error("Gagal mengakses kamera:", err);
+                alert("Tidak dapat mengakses kamera. Periksa izin kamera browser.");
+                cameraStarted = false;
+            });
         }
 
-        saveButton.addEventListener('click', async () => {
+        // ==========================================
+        // SIMPAN HASIL SQUAT
+        // ==========================================
+        saveButton.addEventListener('click', async function () {
             if (squatCount === 0) {
                 alert("Belum ada squat yang dihitung!");
                 return;
             }
 
+            const repsToSave = squatCount;
+
             saveButton.innerText = "Menyimpan...";
             saveButton.disabled = true;
 
             try {
+                // Pertahankan metode POST yang digunakan HTML sebelumnya.
+                // no-cors tidak memungkinkan browser membaca respons server.
                 await fetch(APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nama: currentUserName, reps: squatCount })
+                    method: "POST",
+                    mode: "no-cors",
+                    headers: {
+                        "Content-Type": "text/plain;charset=utf-8"
+                    },
+                    body: JSON.stringify({
+                        nama: currentUserName,
+                        reps: repsToSave
+                    })
                 });
-                
-                alert(`Berhasil menyimpan ${squatCount} repetisi untuk ${currentUserName}!`);
-                
+
+                alert(
+                    `Aktivitas ${currentUserName} (${repsToSave} squat), disimpan.`
+                );
+
+                squatCount = 0;
+                stage = null;
+                counterElement.innerText = "0";
+                saveButton.innerText = "Simpan Squat";
+                saveButton.disabled = false;
+
                 try {
                     window.close();
                 } catch (e) {
@@ -337,8 +628,9 @@
                 window.location.href = "about:blank";
 
             } catch (error) {
-                console.error("Gagal menyimpan:", error);
-                alert("Terjadi kesalahan saat menyimpan data.");
+                console.error("Gagal mengirim data:", error);
+                alert("Gagal mengirim data. Periksa koneksi internet.");
+
                 saveButton.innerText = "Simpan Squat";
                 saveButton.disabled = false;
             }
