@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -24,7 +23,7 @@
 
         <button id="check-btn"
             class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl text-sm">
-            Mulai / Cek Rekor
+            Lanjutkan..
         </button>
     </div>
 
@@ -42,34 +41,49 @@
                 Berikut ringkasan squat Anda:
             </p>
 
-            <!-- REKOR PRIBADI -->
-            <div class="grid grid-cols-2 gap-3 mb-5">
-
-                <div class="bg-slate-900 p-3 rounded-xl border border-slate-700/50">
-                    <p class="text-xs text-slate-400">Rekor Hari Ini</p>
-                    <p id="modal-today" class="text-2xl font-black text-emerald-400">0</p>
+            <!-- REKOR HARIAN MINGGU BERJALAN -->
+            <div class="text-left mb-4">
+                <div class="flex items-center justify-between mb-2">
+                    <h4 class="text-sm font-bold text-white">📅 Rekor Harian Minggu Ini</h4>
+                    <span class="text-xs text-slate-400">Senin–hari ini</span>
                 </div>
-
-                <div class="bg-slate-900 p-3 rounded-xl border border-slate-700/50">
-                    <p class="text-xs text-slate-400">Total Keseluruhan</p>
-                    <p id="modal-total" class="text-2xl font-black text-blue-400">0</p>
+                <div class="bg-slate-900 border border-slate-700 rounded-xl overflow-hidden">
+                    <table class="w-full text-sm">
+                        <thead class="bg-slate-700 text-slate-300 text-xs">
+                            <tr>
+                                <th class="px-3 py-2 text-left">Hari</th>
+                                <th class="px-3 py-2 text-left">Tanggal</th>
+                                <th class="px-3 py-2 text-right">Squat</th>
+                            </tr>
+                        </thead>
+                        <tbody id="week-records-body">
+                            <tr>
+                                <td colspan="3" class="px-3 py-3 text-center text-slate-400">
+                                    Memuat rekor mingguan...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
-
             </div>
 
-            <!-- LEADERBOARD -->
-            <div class="text-left mb-5">
+            <!-- TOTAL BULAN BERJALAN -->
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-700/50 mb-5">
+                <p class="text-xs text-slate-400">Total Squat Bulan Ini</p>
+                <p id="modal-month-total" class="text-3xl font-black text-emerald-400">...</p>
+                <p id="month-caption" class="text-xs text-slate-500 mt-1">
+                    Akumulasi sejak tanggal 1 bulan ini
+                </p>
+            </div>
 
+            <!-- LEADERBOARD: DIBUKA JIKA PESERTA MEMILIH -->
+            <div id="leaderboard-section" class="hidden text-left mb-5">
                 <div class="flex items-center justify-between mb-2">
-                    <h4 class="text-sm font-bold text-white">
-                        🏆 Rekor Semua Peserta
-                    </h4>
+                    <h4 class="text-sm font-bold text-white">🏆 Rekor Semua Peserta</h4>
                     <span class="text-xs text-slate-400">Total squat</span>
                 </div>
-
                 <div class="bg-slate-900 border border-slate-700 rounded-xl overflow-hidden">
                     <div class="max-h-56 overflow-y-auto">
-
                         <table class="w-full text-sm">
                             <thead class="sticky top-0 bg-slate-700 text-slate-300 text-xs">
                                 <tr>
@@ -78,31 +92,32 @@
                                     <th class="px-3 py-2 text-right">Repetisi</th>
                                 </tr>
                             </thead>
-
                             <tbody id="leaderboard-body">
                                 <tr>
                                     <td colspan="3" class="px-3 py-4 text-center text-slate-400">
-                                        Memuat rekor peserta...
+                                        Tekan tombol cek rekor untuk menampilkan peserta.
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
-
                     </div>
                 </div>
-
                 <p id="leaderboard-status" class="text-xs text-slate-500 mt-2"></p>
             </div>
 
-            <div class="flex gap-3">
-                <button id="close-modal-btn"
-                    class="w-1/2 bg-slate-700 hover:bg-slate-600 py-2.5 rounded-xl text-sm">
-                    Tutup
+            <!-- TIGA PILIHAN SETELAH MELIHAT REKOR PRIBADI -->
+            <div class="flex flex-col gap-2">
+                <button id="show-leaderboard-btn"
+                    class="w-full bg-blue-700 hover:bg-blue-600 py-3 px-3 rounded-xl text-sm font-semibold">
+                    🏆 Cek Rekor Semua Peserta
                 </button>
-
                 <button id="start-challenge-btn"
-                    class="w-1/2 bg-emerald-600 hover:bg-emerald-700 py-2.5 rounded-xl text-sm font-semibold">
-                    Lanjutkan
+                    class="w-full bg-emerald-600 hover:bg-emerald-700 py-3 px-3 rounded-xl text-sm font-semibold">
+                    Lanjut Squat
+                </button>
+                <button id="close-modal-btn"
+                    class="w-full bg-slate-700 hover:bg-slate-600 py-2.5 px-3 rounded-xl text-sm">
+                    Tutup
                 </button>
             </div>
 
@@ -153,7 +168,7 @@
     <script>
         // URL WEB APP GOOGLE APPS SCRIPT
         const APPS_SCRIPT_URL =
-            'https://script.google.com/macros/s/AKfycbzM18-SH8hH2naJXR6WFRT5RFZv3fq5vj1faJcRxdC_crsyTAqbi0N95o6g2wn93nJ8/exec';
+            'https://script.google.com/macros/s/AKfycbxkJYFgWTeUnx58IPEdkXf0Nh_LZPetU99HMzGqq21OUcW1BTvAGdmtTvBiQAmiwPYC/exec';
 
         const loginSection = document.getElementById('login-section');
         const infoModal = document.getElementById('info-modal');
@@ -163,13 +178,16 @@
         const checkBtn = document.getElementById('check-btn');
 
         const modalName = document.getElementById('modal-name');
-        const modalToday = document.getElementById('modal-today');
-        const modalTotal = document.getElementById('modal-total');
+        const weekRecordsBody = document.getElementById('week-records-body');
+        const modalMonthTotal = document.getElementById('modal-month-total');
+        const monthCaption = document.getElementById('month-caption');
 
+        const leaderboardSection = document.getElementById('leaderboard-section');
         const leaderboardBody = document.getElementById('leaderboard-body');
         const leaderboardStatus = document.getElementById('leaderboard-status');
 
         const closeModalBtn = document.getElementById('close-modal-btn');
+        const showLeaderboardBtn = document.getElementById('show-leaderboard-btn');
         const startChallengeBtn = document.getElementById('start-challenge-btn');
         const activeUserDisplay = document.getElementById('active-user-display');
         const changeUserBtn = document.getElementById('change-user-btn');
@@ -188,7 +206,7 @@
         let cameraStarted = false;
 
         // ==========================================
-        // CEK REKOR PESERTA
+        // AMBIL REKOR MINGGU INI DAN TOTAL BULAN INI
         // ==========================================
         checkBtn.addEventListener('click', async function () {
             const name = userInput.value.trim();
@@ -200,50 +218,91 @@
             }
 
             currentUserName = name;
-
             modalName.innerText = `Halo, ${name}!`;
-            modalToday.innerText = "...";
-            modalTotal.innerText = "...";
-
+            weekRecordsBody.innerHTML = `
+                <tr><td colspan="3" class="px-3 py-3 text-center text-slate-400">Memuat rekor mingguan...</td></tr>`;
+            modalMonthTotal.innerText = "...";
+            monthCaption.innerText = "Mengambil total bulan berjalan...";
             leaderboardBody.innerHTML = `
-                <tr>
-                    <td colspan="3" class="px-3 py-4 text-center text-slate-400">
-                        Memuat rekor peserta...
-                    </td>
-                </tr>`;
-
+                <tr><td colspan="3" class="px-3 py-4 text-center text-slate-400">Memuat rekor peserta...</td></tr>`;
             leaderboardStatus.innerText = "";
+            leaderboardSection.classList.add('hidden');
+            showLeaderboardBtn.innerText = "🏆 Cek Rekor Semua Peserta";
             infoModal.classList.remove('hidden');
 
-            // Satu permintaan mengambil rekor pribadi sekaligus leaderboard
             try {
                 const url = `${APPS_SCRIPT_URL}?action=checkUser&nama=${encodeURIComponent(name)}`;
                 const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const data = await response.json();
 
                 if (data.status === "error") {
                     throw new Error(data.message || "Gagal mengambil data.");
                 }
 
-                modalToday.innerText = Number(data.todayReps || 0).toLocaleString("id-ID");
-                modalTotal.innerText = Number(data.totalReps || 0).toLocaleString("id-ID");
+                renderWeeklyRecords(data.weekDaily || data.weeklyDaily || []);
+
+                if (data.monthTotal !== undefined && data.monthTotal !== null) {
+                    modalMonthTotal.innerText = Number(data.monthTotal || 0).toLocaleString("id-ID");
+                    monthCaption.innerText = data.monthLabel || "Akumulasi sejak tanggal 1 bulan ini";
+                } else {
+                    modalMonthTotal.innerText = "—";
+                    monthCaption.innerText = "Perbarui Apps Script agar total bulan ini dapat ditampilkan.";
+                }
 
                 renderLeaderboard(data.leaderboard || [], name);
 
             } catch (error) {
                 console.error("Gagal mengambil data:", error);
-                modalToday.innerText = "—";
-                modalTotal.innerText = "—";
-
+                weekRecordsBody.innerHTML = `
+                    <tr><td colspan="3" class="px-3 py-3 text-center text-amber-300 text-xs">Data belum dapat dimuat. Periksa koneksi dan Apps Script.</td></tr>`;
+                modalMonthTotal.innerText = "—";
+                monthCaption.innerText = error.message || "Gagal mengambil data.";
                 leaderboardBody.innerHTML = `
-                    <tr>
-                        <td colspan="3" class="px-3 py-4 text-center text-amber-300 text-xs">
-                            Data belum dapat dimuat. Periksa koneksi dan Apps Script.
-                        </td>
-                    </tr>`;
-
+                    <tr><td colspan="3" class="px-3 py-4 text-center text-amber-300 text-xs">Rekor peserta belum dapat dimuat.</td></tr>`;
                 leaderboardStatus.innerText = error.message || "Gagal mengambil data.";
             }
+        });
+
+        // ==========================================
+        // MENAMPILKAN REKOR PER HARI (SENIN S.D. HARI INI)
+        // ==========================================
+        function renderWeeklyRecords(records) {
+            if (!Array.isArray(records) || records.length === 0) {
+                weekRecordsBody.innerHTML = `
+                    <tr><td colspan="3" class="px-3 py-3 text-center text-amber-300 text-xs">Data rekor mingguan belum tersedia. Perbarui Apps Script untuk mengirim weekDaily.</td></tr>`;
+                return;
+            }
+
+            weekRecordsBody.innerHTML = "";
+            records.forEach((record, index) => {
+                const tr = document.createElement("tr");
+                tr.className = index % 2 === 0 ? "bg-slate-900" : "bg-slate-800";
+
+                const dayCell = document.createElement("td");
+                dayCell.className = "px-3 py-2 text-white";
+                dayCell.textContent = String(record.day || record.hari || "");
+
+                const dateCell = document.createElement("td");
+                dateCell.className = "px-3 py-2 text-slate-300";
+                dateCell.textContent = String(record.date || record.tanggal || "");
+
+                const repsCell = document.createElement("td");
+                repsCell.className = "px-3 py-2 text-right font-bold text-emerald-300";
+                repsCell.textContent = Number(record.reps ?? record.total ?? 0).toLocaleString("id-ID");
+
+                tr.append(dayCell, dateCell, repsCell);
+                weekRecordsBody.appendChild(tr);
+            });
+        }
+
+        // Tombol untuk membuka/menyembunyikan rekor semua peserta
+        showLeaderboardBtn.addEventListener('click', function () {
+            const isHidden = leaderboardSection.classList.contains('hidden');
+            leaderboardSection.classList.toggle('hidden');
+            showLeaderboardBtn.innerText = isHidden
+                ? "Sembunyikan Rekor Semua Peserta"
+                : "🏆 Cek Rekor Semua Peserta";
         });
 
         // ==========================================
@@ -262,7 +321,6 @@
                 return;
             }
 
-            // Mendukung properti total atau totalReps
             records.sort((a, b) =>
                 Number(b.total ?? b.totalReps ?? 0) -
                 Number(a.total ?? a.totalReps ?? 0)
@@ -308,36 +366,33 @@
         }
 
         // ==========================================
-        // TUTUP POPUP
+        // TUTUP HALAMAN
         // ==========================================
         closeModalBtn.addEventListener('click', function () {
-        // Coba tutup tab atau jendela web
             window.close();
 
-        // Jika browser menolak menutup halaman,
-        // tampilkan petunjuk kepada pengguna.
             setTimeout(function () {
-            document.body.innerHTML = `
-              <div style="
-                background:#0f172a;
-                color:white;
-                min-height:100vh;
-                display:flex;
-                flex-direction:column;
-                align-items:center;
-                justify-content:center;
-                text-align:center;
-                padding:24px;
-                font-family:Arial,sans-serif;
-                box-sizing:border-box;
-              ">
-                <h2 style="color:#34d399;">
-                    Terima kasih sudah ikut Squat Challenge!
-                </h2>
-                <p>Anda dapat menutup tab atau jendela browser ini.</p>
-              </div>
-              `;
-           }, 300);
+                document.body.innerHTML = `
+                    <div style="
+                        background:#0f172a;
+                        color:white;
+                        min-height:100vh;
+                        display:flex;
+                        flex-direction:column;
+                        align-items:center;
+                        justify-content:center;
+                        text-align:center;
+                        padding:24px;
+                        font-family:Arial,sans-serif;
+                        box-sizing:border-box;
+                    ">
+                        <h2 style="color:#34d399;">
+                            Terima kasih sudah ikut Squat Challenge!
+                        </h2>
+                        <p>Anda dapat menutup tab atau jendela browser ini.</p>
+                    </div>
+                `;
+            }, 300);
         });
 
         // ==========================================
@@ -596,7 +651,7 @@
             saveButton.disabled = true;
 
             try {
-                // Pertahankan metode POST yang digunakan HTML sebelumnya.
+                // Metode POST yang digunakan HTML sebelumnya.
                 // no-cors tidak memungkinkan browser membaca respons server.
                 await fetch(APPS_SCRIPT_URL, {
                     method: "POST",
