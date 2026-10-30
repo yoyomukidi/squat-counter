@@ -16,7 +16,7 @@
             object-fit: contain;
         }
         .squat-demo-frame {
-            width: 60%;
+            width: 100%;
             max-width: 820px;
             margin-left: auto;
             margin-right: auto;
@@ -50,10 +50,10 @@
 
         <div class="bg-slate-800 p-5 rounded-2xl border border-slate-700 shadow-xl">
             <h2 class="text-base font-bold mb-1">Pilih Mode</h2>
-            <p class="text-xs text-slate-400 mb-4">Trial untuk mencoba tanpa menyimpan. <br> Challenge untuk mencatat rekor.</p>
+            <p class="text-xs text-slate-400 mb-4">Trial untuk mencoba tanpa menyimpan. Challenge untuk mencatat rekor.</p>
             <div class="flex flex-col gap-3">
                 <button id="trial-btn" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold py-3 rounded-xl text-sm">
-                    Trial Squat
+                    Coba Trial Squat
                 </button>
                 <button id="challenge-btn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl text-sm">
                     Mulai Challenge
@@ -62,7 +62,7 @@
         </div>
     </div>
 
-    <!-- INPUT NAMA: HANYA UNTUK CHALLENGE -->
+    <!-- INPUT NAMA: CHALLENGE (PESERTA LAMA DAN BARU) -->
     <div id="login-section" class="hidden w-full max-w-md bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl">
         <h2 class="text-base font-bold mb-4">Challenge Squat</h2>
         <label class="block text-xs font-bold text-slate-300 mb-2">
@@ -73,10 +73,32 @@
 
         <button id="check-btn"
             class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl text-sm">
-            Lihat Rekor Pribadi
+            Lanjutkan..
         </button>
         <button id="back-home-btn" class="w-full mt-2 bg-slate-700 hover:bg-slate-600 text-white py-2.5 rounded-xl text-sm">
             Kembali ke Halaman Depan
+        </button>
+    </div>
+
+    <!-- REGISTRASI PESERTA BARU -->
+    <div id="registration-section" class="hidden w-full max-w-md bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl">
+        <h2 id="registration-title" class="text-base font-bold mb-2">Pendaftaran Peserta Baru</h2>
+        <p id="registration-notice" class="text-xs text-slate-400 mb-4">Nama belum ditemukan. Silakan lengkapi nama dan nomor telepon untuk mendaftar.</p>
+
+        <label id="registration-name-label" for="registration-name" class="block text-xs font-bold text-slate-300 mb-2">NAMA PESERTA</label>
+        <input type="text" id="registration-name" maxlength="80" placeholder="Nama lengkap"
+            class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm mb-4">
+
+        <label for="registration-phone" class="block text-xs font-bold text-slate-300 mb-2">NOMOR TELEPON / WHATSAPP</label>
+        <input type="tel" id="registration-phone" maxlength="20" inputmode="tel" placeholder="Contoh: 081234567890"
+            class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm mb-2">
+        <p class="text-[11px] text-slate-500 mb-4">Nomor telepon digunakan untuk administrasi peserta dan tidak ditampilkan pada leaderboard.</p>
+
+        <button id="register-btn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl text-sm">
+            Daftar &amp; Lihat Rekor
+        </button>
+        <button id="back-login-from-register-btn" class="w-full mt-2 bg-slate-700 hover:bg-slate-600 text-white py-2.5 rounded-xl text-sm">
+            Kembali
         </button>
     </div>
 
@@ -247,6 +269,14 @@
         const returnHomeBtn = document.getElementById('return-home-btn');
         const userInput = document.getElementById('username');
         const checkBtn = document.getElementById('check-btn');
+        const registrationSection = document.getElementById('registration-section');
+        const registrationNameInput = document.getElementById('registration-name');
+        const registrationPhoneInput = document.getElementById('registration-phone');
+        const registrationNotice = document.getElementById('registration-notice');
+        const registrationTitle = document.getElementById('registration-title');
+        const registrationNameLabel = document.getElementById('registration-name-label');
+        const registerBtn = document.getElementById('register-btn');
+        const backLoginFromRegisterBtn = document.getElementById('back-login-from-register-btn');
 
         const modalName = document.getElementById('modal-name');
         const weekRecordsBody = document.getElementById('week-records-body');
@@ -274,6 +304,7 @@
         let squatCount = 0;
         let stage = null;
         let currentUserName = "";
+        let registrationMode = "new"; // "new" atau "updatePhone"
         let sessionMode = null; // "trial" atau "challenge"
         let cameraStarted = false;
         let cameraLoopActive = false;
@@ -290,6 +321,7 @@
         challengeBtn.addEventListener('click', function () {
             homeSection.classList.add('hidden');
             finishSection.classList.add('hidden');
+            registrationSection.classList.add('hidden');
             loginSection.classList.remove('hidden');
             userInput.focus();
         });
@@ -297,6 +329,7 @@
         backHomeBtn.addEventListener('click', function () {
             stopPoseAndCamera();
             loginSection.classList.add('hidden');
+            registrationSection.classList.add('hidden');
             infoModal.classList.add('hidden');
             appSection.classList.add('hidden');
             finishSection.classList.add('hidden');
@@ -311,6 +344,7 @@
             finishSection.classList.add('hidden');
             appSection.classList.add('hidden');
             loginSection.classList.add('hidden');
+            registrationSection.classList.add('hidden');
             infoModal.classList.add('hidden');
             homeSection.classList.remove('hidden');
             userInput.value = '';
@@ -382,62 +416,191 @@
         }
 
         // ==========================================
-        // AMBIL REKOR MINGGU INI DAN TOTAL BULAN INI
+        // CEK NAMA PESERTA LAMA ATAU PESERTA BARU
+        // Peserta lama tetap cukup mengetik nama seperti sebelumnya.
+        // Peserta yang belum dikenal diarahkan ke formulir nama + telepon.
         // ==========================================
+        async function requestParticipantData(name) {
+            const url = `${APPS_SCRIPT_URL}?action=checkUser&nama=${encodeURIComponent(name)}&_=${Date.now()}`;
+            const response = await fetch(url, { cache: 'no-store' });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            if (data.status === 'error') throw new Error(data.message || 'Gagal mengambil data.');
+            return data;
+        }
+
+        function showParticipantRecords(data, displayName) {
+            currentUserName = data.nama || displayName;
+            modalName.innerText = `Halo, ${currentUserName}!`;
+            renderWeeklyRecords(data.weekDaily || data.weeklyDaily || []);
+
+            if (data.monthTotal !== undefined && data.monthTotal !== null) {
+                modalMonthTotal.innerText = Number(data.monthTotal || 0).toLocaleString('id-ID');
+                monthCaption.innerText = data.monthLabel || 'Akumulasi sejak tanggal 1 bulan ini';
+            } else {
+                modalMonthTotal.innerText = '—';
+                monthCaption.innerText = 'Total bulan ini belum tersedia.';
+            }
+
+            renderLeaderboard(data.leaderboard || [], currentUserName);
+            leaderboardSection.classList.add('hidden');
+            showLeaderboardBtn.innerText = '🏆 Cek Rekor Semua Peserta';
+            infoModal.classList.remove('hidden');
+        }
+
+        function showRegistrationForm(mode, name, notice) {
+            registrationMode = mode;
+            loginSection.classList.add('hidden');
+            registrationSection.classList.remove('hidden');
+            registrationNameInput.value = name || '';
+            registrationPhoneInput.value = '';
+            registrationNotice.innerText = notice;
+
+            if (mode === 'updatePhone') {
+                registrationTitle.innerText = 'Lengkapi Nomor Telepon';
+                registrationNameLabel.innerText = 'NAMA PESERTA';
+                registrationNameInput.readOnly = true;
+                registrationNameInput.classList.add('opacity-70');
+                registerBtn.innerText = 'Simpan Nomor Telepon & Lihat Rekor';
+                registrationPhoneInput.focus();
+            } else {
+                registrationTitle.innerText = 'Pendaftaran Peserta Baru';
+                registrationNameLabel.innerText = 'NAMA PESERTA';
+                registrationNameInput.readOnly = false;
+                registrationNameInput.classList.remove('opacity-70');
+                registerBtn.innerText = 'Daftar & Lihat Rekor';
+                registrationNameInput.focus();
+            }
+        }
+
         checkBtn.addEventListener('click', async function () {
             const name = userInput.value.trim();
-
             if (!name) {
-                alert("Silakan masukkan nama Anda terlebih dahulu!");
+                alert('Silakan masukkan nama Anda terlebih dahulu!');
                 userInput.focus();
                 return;
             }
 
-            currentUserName = name;
-            modalName.innerText = `Halo, ${name}!`;
-            weekRecordsBody.innerHTML = `
-                <tr><td colspan="3" class="px-3 py-3 text-center text-slate-400">Memuat rekor mingguan...</td></tr>`;
-            modalMonthTotal.innerText = "...";
-            monthCaption.innerText = "Mengambil total bulan berjalan...";
-            leaderboardBody.innerHTML = `
-                <tr><td colspan="3" class="px-3 py-4 text-center text-slate-400">Memuat rekor peserta...</td></tr>`;
-            leaderboardStatus.innerText = "";
-            leaderboardSection.classList.add('hidden');
-            showLeaderboardBtn.innerText = "🏆 Cek Rekor Semua Peserta";
-            infoModal.classList.remove('hidden');
+            checkBtn.disabled = true;
+            checkBtn.innerText = 'Memeriksa nama...';
 
             try {
-                const url = `${APPS_SCRIPT_URL}?action=checkUser&nama=${encodeURIComponent(name)}`;
-                const response = await fetch(url);
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                const data = await response.json();
+                const data = await requestParticipantData(name);
 
-                if (data.status === "error") {
-                    throw new Error(data.message || "Gagal mengambil data.");
+                if (data.participantFound === false || data.needsRegistration === true) {
+                    showRegistrationForm(
+                        'new',
+                        name,
+                        'Nama ini belum ditemukan. Silakan lengkapi nama dan nomor telepon untuk mendaftar sebagai peserta baru.'
+                    );
+                    return;
                 }
 
-                renderWeeklyRecords(data.weekDaily || data.weeklyDaily || []);
-
-                if (data.monthTotal !== undefined && data.monthTotal !== null) {
-                    modalMonthTotal.innerText = Number(data.monthTotal || 0).toLocaleString("id-ID");
-                    monthCaption.innerText = data.monthLabel || "Akumulasi sejak tanggal 1 bulan ini";
-                } else {
-                    modalMonthTotal.innerText = "—";
-                    monthCaption.innerText = "Perbarui Apps Script agar total bulan ini dapat ditampilkan.";
+                if (data.participantFound !== true) {
+                    throw new Error('Respons server belum memuat status peserta. Periksa deployment Code.gs terbaru.');
                 }
 
-                renderLeaderboard(data.leaderboard || [], name);
+                // Peserta lama yang belum memiliki nomor telepon di sheet Peserta
+                // diminta melengkapinya satu kali sebelum melihat rekor.
+                if (data.phoneRegistered !== true) {
+                    showRegistrationForm(
+                        'updatePhone',
+                        data.nama || name,
+                        'Nama Anda sudah dikenali sebagai peserta challenge. Mohon lengkapi nomor telepon/WhatsApp agar dapat dihubungi panitia jika Anda memenangkan challenge ini.'
+                    );
+                    return;
+                }
+
+                showParticipantRecords(data, name);
 
             } catch (error) {
-                console.error("Gagal mengambil data:", error);
-                weekRecordsBody.innerHTML = `
-                    <tr><td colspan="3" class="px-3 py-3 text-center text-amber-300 text-xs">Data belum dapat dimuat. Periksa koneksi dan Apps Script.</td></tr>`;
-                modalMonthTotal.innerText = "—";
-                monthCaption.innerText = error.message || "Gagal mengambil data.";
-                leaderboardBody.innerHTML = `
-                    <tr><td colspan="3" class="px-3 py-4 text-center text-amber-300 text-xs">Rekor peserta belum dapat dimuat.</td></tr>`;
-                leaderboardStatus.innerText = error.message || "Gagal mengambil data.";
+                console.error('Gagal memeriksa peserta:', error);
+                alert('Tidak dapat memeriksa nama peserta. ' + (error.message || 'Periksa koneksi dan Apps Script.'));
+            } finally {
+                checkBtn.disabled = false;
+                checkBtn.innerText = 'Lihat Rekor Pribadi';
             }
+        });
+
+        // Kembali dari formulir registrasi ke input nama challenge.
+        backLoginFromRegisterBtn.addEventListener('click', function () {
+            registrationSection.classList.add('hidden');
+            loginSection.classList.remove('hidden');
+            registrationPhoneInput.value = '';
+            registrationMode = 'new';
+            registrationNameInput.readOnly = false;
+            registrationNameInput.classList.remove('opacity-70');
+            registrationTitle.innerText = 'Pendaftaran Peserta Baru';
+            registerBtn.innerText = 'Daftar & Lihat Rekor';
+            userInput.focus();
+        });
+
+        // ==========================================
+        // DAFTAR PESERTA BARU
+        // ==========================================
+        registerBtn.addEventListener('click', async function () {
+            const nama = registrationNameInput.value.trim();
+            const phone = registrationPhoneInput.value.trim();
+            const phoneDigits = phone.replace(/\D/g, '');
+
+            if (nama.length < 2) {
+                alert('Nama peserta minimal 2 karakter.');
+                registrationNameInput.focus();
+                return;
+            }
+            if (phoneDigits.length < 8 || phoneDigits.length > 15) {
+                alert('Nomor telepon harus terdiri dari 8 sampai 15 angka.');
+                registrationPhoneInput.focus();
+                return;
+            }
+
+            registerBtn.disabled = true;
+            registerBtn.innerText = 'Mendaftarkan...';
+
+            try {
+                // POST no-cors dipakai untuk kompatibilitas dengan Apps Script.
+                // Keberhasilan kemudian diverifikasi dengan GET checkUser.
+                await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({
+                        action: registrationMode === 'updatePhone'
+                            ? 'updateParticipantPhone'
+                            : 'registerParticipant',
+                        nama: nama,
+                        phone: phone
+                    })
+                });
+
+                const verifyData = await requestParticipantData(nama);
+                if (verifyData.participantFound !== true || verifyData.phoneRegistered !== true) {
+                    throw new Error('Nomor telepon belum berhasil tercatat. Pastikan Code.gs terbaru sudah di-deploy, lalu coba kembali.');
+                }
+
+                registrationSection.classList.add('hidden');
+                loginSection.classList.add('hidden');
+                userInput.value = verifyData.nama || nama;
+                registrationPhoneInput.value = '';
+                showParticipantRecords(verifyData, nama);
+
+            } catch (error) {
+                console.error('Gagal mendaftarkan peserta:', error);
+                alert('Nomor telepon belum berhasil disimpan. ' + (error.message || 'Periksa koneksi dan deployment Apps Script.'));
+            } finally {
+                registerBtn.disabled = false;
+                registerBtn.innerText = registrationMode === 'updatePhone'
+                    ? 'Simpan Nomor Telepon & Lihat Rekor'
+                    : 'Daftar & Lihat Rekor';
+            }
+        });
+
+        // Tombol Enter juga dapat digunakan pada isian nama/telepon.
+        userInput.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') checkBtn.click();
+        });
+        registrationPhoneInput.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') registerBtn.click();
         });
 
         // ==========================================
@@ -897,7 +1060,4 @@
                 saveButton.innerText = "Simpan Squat";
                 saveButton.disabled = false;
             }
-        });
-    </script>
-</body>
-</html>
+     
