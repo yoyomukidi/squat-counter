@@ -11,12 +11,12 @@
 <style>
         .squat-demo-image {
             display: block;
-            width: 90%;
+            width: 100%;
             height: auto;
             object-fit: contain;
         }
         .squat-demo-frame {
-            width: 90%;
+            width: 100%;
             max-width: 820px;
             margin-left: auto;
             margin-right: auto;
@@ -73,7 +73,7 @@
 
         <button id="check-btn"
             class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl text-sm">
-            Lanjutkan..
+            Lihat Rekor Pribadi
         </button>
         <button id="back-home-btn" class="w-full mt-2 bg-slate-700 hover:bg-slate-600 text-white py-2.5 rounded-xl text-sm">
             Kembali ke Halaman Depan
@@ -166,7 +166,7 @@
             <div id="leaderboard-section" class="hidden text-left mb-5">
                 <div class="flex items-center justify-between mb-2">
                     <h4 class="text-sm font-bold text-white">🏆 Rekor Semua Peserta</h4>
-                    <span class="text-xs text-slate-400">Total squat</span>
+                    <span id="leaderboard-period" class="text-xs text-slate-400">Total bulan ini</span>
                 </div>
                 <div class="bg-slate-900 border border-slate-700 rounded-xl overflow-hidden">
                     <div class="max-h-56 overflow-y-auto">
@@ -175,7 +175,7 @@
                                 <tr>
                                     <th class="px-3 py-2 text-left">No.</th>
                                     <th class="px-3 py-2 text-left">Nama</th>
-                                    <th class="px-3 py-2 text-right">Repetisi</th>
+                                    <th class="px-3 py-2 text-right">Squat Bulan Ini</th>
                                 </tr>
                             </thead>
                             <tbody id="leaderboard-body">
@@ -286,6 +286,7 @@
         const leaderboardSection = document.getElementById('leaderboard-section');
         const leaderboardBody = document.getElementById('leaderboard-body');
         const leaderboardStatus = document.getElementById('leaderboard-status');
+        const leaderboardPeriod = document.getElementById('leaderboard-period');
 
         const closeModalBtn = document.getElementById('close-modal-btn');
         const showLeaderboardBtn = document.getElementById('show-leaderboard-btn');
@@ -443,6 +444,9 @@
             }
 
             renderLeaderboard(data.leaderboard || [], currentUserName);
+            if (leaderboardPeriod) {
+                leaderboardPeriod.innerText = data.leaderboardMonthLabel || 'Total bulan ini';
+            }
             leaderboardSection.classList.add('hidden');
             showLeaderboardBtn.innerText = '🏆 Cek Rekor Semua Peserta';
             infoModal.classList.remove('hidden');
@@ -506,7 +510,7 @@
                     showRegistrationForm(
                         'updatePhone',
                         data.nama || name,
-                        'Nama Anda sudah dikenali sebagai peserta challenge. Mohon lengkapi nomor telepon/WhatsApp agar dapat dihubungi panitia jika Anda memenangkan challenge ini.'
+                        'Nama Anda sudah dikenali sebagai peserta lama. Mohon lengkapi nomor telepon/WhatsApp agar data peserta lebih lengkap.'
                     );
                     return;
                 }
@@ -701,7 +705,7 @@
             });
 
             leaderboardStatus.innerText =
-                `${records.length} peserta • urutan total tertinggi`;
+                `${records.length} peserta • diurutkan berdasarkan squat bulan berjalan`;
         }
 
         // ==========================================
