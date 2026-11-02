@@ -165,7 +165,7 @@
             <!-- LEADERBOARD: DIBUKA JIKA PESERTA MEMILIH -->
             <div id="leaderboard-section" class="hidden text-left mb-5">
                 <div class="flex items-center justify-between mb-2">
-                    <h4 class="text-sm font-bold text-white">🏆 Rekor Semua Peserta</h4>
+                    <h4 class="text-sm font-bold text-white">🏆 Leaderboard</h4>
                     <span id="leaderboard-period" class="text-xs text-slate-400">Total bulan ini</span>
                 </div>
                 <div class="bg-slate-900 border border-slate-700 rounded-xl overflow-hidden">
@@ -195,7 +195,7 @@
             <div class="flex flex-col gap-2">
                 <button id="show-leaderboard-btn"
                     class="w-full bg-blue-700 hover:bg-blue-600 py-3 px-3 rounded-xl text-sm font-semibold">
-                    🏆 Cek Rekor Semua Peserta
+                    🏆 Leaderboard
                 </button>
                 <button id="start-challenge-btn"
                     class="w-full bg-emerald-600 hover:bg-emerald-700 py-3 px-3 rounded-xl text-sm font-semibold">
@@ -448,7 +448,7 @@
                 leaderboardPeriod.innerText = data.leaderboardMonthLabel || 'Total bulan ini';
             }
             leaderboardSection.classList.add('hidden');
-            showLeaderboardBtn.innerText = '🏆 Cek Rekor Semua Peserta';
+            showLeaderboardBtn.innerText = '🏆 Leaderboard';
             infoModal.classList.remove('hidden');
         }
 
@@ -644,8 +644,8 @@
             const isHidden = leaderboardSection.classList.contains('hidden');
             leaderboardSection.classList.toggle('hidden');
             showLeaderboardBtn.innerText = isHidden
-                ? "Sembunyikan Rekor Semua Peserta"
-                : "🏆 Cek Rekor Semua Peserta";
+                ? "Sembunyikan Rekor"
+                : "🏆 Leaderboard";
         });
 
         // ==========================================
