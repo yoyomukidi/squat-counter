@@ -26,6 +26,13 @@
             background: #0f172a;
         }
     </style>
+<style>
+        /* Label tombol periode leaderboard harus selalu satu baris. */
+        #leaderboard-section button { white-space: nowrap; min-width: 0; }
+        @media (min-width: 640px) {
+            #leaderboard-section button { font-size: 12px; letter-spacing: -0.02em; }
+        }
+    </style>
 </head>
 
 <body class="bg-slate-900 text-white font-sans flex flex-col items-center justify-center min-h-screen p-4">
@@ -73,7 +80,7 @@
 
         <button id="check-btn"
             class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl text-sm">
-            Lanjutkan..
+            Klik untuk melanjutkan
         </button>
         <button id="back-home-btn" class="w-full mt-2 bg-slate-700 hover:bg-slate-600 text-white py-2.5 rounded-xl text-sm">
             Kembali ke Halaman Depan
@@ -127,12 +134,24 @@
                 Berikut ringkasan squat Anda:
             </p>
 
-            <!-- REKOR HARIAN MINGGU BERJALAN -->
+            <!-- REKOR HARIAN PRIBADI: MINGGU INI / MINGGU LALU -->
             <div class="text-left mb-4">
                 <div class="flex items-center justify-between mb-2">
-                    <h4 class="text-sm font-bold text-white">📅 Rekor Harian Minggu Ini</h4>
-                    <span class="text-xs text-slate-400">Senin–hari ini</span>
+                    <h4 class="text-sm font-bold text-white">📅 Rekor Harian Pribadi</h4>
                 </div>
+
+                <div class="grid grid-cols-2 gap-2 mb-2">
+                    <button id="personal-week-current-btn"
+                        class="py-2.5 px-3 rounded-lg text-sm font-semibold bg-blue-700 text-white border border-blue-500">
+                        Minggu Ini
+                    </button>
+                    <button id="personal-week-last-btn"
+                        class="py-2.5 px-3 rounded-lg text-sm font-semibold bg-slate-700 text-slate-200 border border-slate-600">
+                        Minggu Lalu
+                    </button>
+                </div>
+
+                <p id="personal-week-caption" class="text-xs text-slate-400 mb-2">Senin–hari ini</p>
                 <div class="bg-slate-900 border border-slate-700 rounded-xl overflow-hidden">
                     <table class="w-full text-sm">
                         <thead class="bg-slate-700 text-slate-300 text-xs">
@@ -162,12 +181,32 @@
                 </p>
             </div>
 
-            <!-- LEADERBOARD: DIBUKA JIKA PESERTA MEMILIH -->
+            <!-- LEADERBOARD: PILIH MINGGU INI ATAU BULAN INI -->
             <div id="leaderboard-section" class="hidden text-left mb-5">
                 <div class="flex items-center justify-between mb-2">
                     <h4 class="text-sm font-bold text-white">🏆 Leaderboard</h4>
-                    <span id="leaderboard-period" class="text-xs text-slate-400">Total bulan ini</span>
                 </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                    <button id="leaderboard-week-btn"
+                        class="py-2.5 px-1 rounded-lg text-xs font-semibold whitespace-nowrap bg-blue-700 text-white border border-blue-500">
+                        Minggu Ini
+                    </button>
+                    <button id="leaderboard-last-week-btn"
+                        class="py-2.5 px-1 rounded-lg text-xs font-semibold whitespace-nowrap bg-slate-700 text-slate-200 border border-slate-600">
+                        Minggu Lalu
+                    </button>
+                    <button id="leaderboard-month-btn"
+                        class="py-2.5 px-1 rounded-lg text-xs font-semibold whitespace-nowrap bg-slate-700 text-slate-200 border border-slate-600">
+                        Bulan Ini
+                    </button>
+                    <button id="leaderboard-consistency-btn"
+                        class="py-2.5 px-1 rounded-lg text-xs font-semibold whitespace-nowrap bg-slate-700 text-slate-200 border border-slate-600">
+                        Konsisten
+                    </button>
+                </div>
+
+                <p id="leaderboard-period" class="text-xs text-slate-400 mb-2">Peringkat bulan ini</p>
                 <div class="bg-slate-900 border border-slate-700 rounded-xl overflow-hidden">
                     <div class="max-h-56 overflow-y-auto">
                         <table class="w-full text-sm">
@@ -175,7 +214,7 @@
                                 <tr>
                                     <th class="px-3 py-2 text-left">No.</th>
                                     <th class="px-3 py-2 text-left">Nama</th>
-                                    <th class="px-3 py-2 text-right">Squat Bulan Ini</th>
+                                    <th id="leaderboard-column-label" class="px-2 py-2 text-right whitespace-nowrap text-[11px]" style="white-space: nowrap; min-width: max-content;">Squat Bulan Ini</th>
                                 </tr>
                             </thead>
                             <tbody id="leaderboard-body">
@@ -280,6 +319,9 @@
 
         const modalName = document.getElementById('modal-name');
         const weekRecordsBody = document.getElementById('week-records-body');
+        const personalWeekCurrentBtn = document.getElementById('personal-week-current-btn');
+        const personalWeekLastBtn = document.getElementById('personal-week-last-btn');
+        const personalWeekCaption = document.getElementById('personal-week-caption');
         const modalMonthTotal = document.getElementById('modal-month-total');
         const monthCaption = document.getElementById('month-caption');
 
@@ -287,6 +329,11 @@
         const leaderboardBody = document.getElementById('leaderboard-body');
         const leaderboardStatus = document.getElementById('leaderboard-status');
         const leaderboardPeriod = document.getElementById('leaderboard-period');
+        const leaderboardWeekBtn = document.getElementById('leaderboard-week-btn');
+        const leaderboardLastWeekBtn = document.getElementById('leaderboard-last-week-btn');
+        const leaderboardMonthBtn = document.getElementById('leaderboard-month-btn');
+        const leaderboardConsistencyBtn = document.getElementById('leaderboard-consistency-btn');
+        const leaderboardColumnLabel = document.getElementById('leaderboard-column-label');
 
         const closeModalBtn = document.getElementById('close-modal-btn');
         const showLeaderboardBtn = document.getElementById('show-leaderboard-btn');
@@ -311,6 +358,17 @@
         let cameraLoopActive = false;
         let cameraStream = null;
         let poseInstance = null;
+        let leaderboardData = { week: [], lastWeek: [], month: [], consistency: [] };
+        let leaderboardLabels = {
+            week: 'Peringkat Minggu Ini',
+            lastWeek: 'Peringkat Minggu Lalu',
+            month: 'Peringkat bulan ini',
+            consistency: 'Paling Konsisten Bulan Ini'
+        };
+        let activeLeaderboardPeriod = 'week';
+        let personalWeekData = { current: [], previous: [] };
+        let personalWeekLabels = { current: 'Minggu Ini (Senin–hari ini)', previous: 'Minggu Lalu (Senin–Minggu)' };
+        let activePersonalWeek = 'current';
 
         // ==========================================
         // NAVIGASI HALAMAN DEPAN DAN PILIHAN MODE
@@ -433,7 +491,16 @@
         function showParticipantRecords(data, displayName) {
             currentUserName = data.nama || displayName;
             modalName.innerText = `Halo, ${currentUserName}!`;
-            renderWeeklyRecords(data.weekDaily || data.weeklyDaily || []);
+            personalWeekData.current = Array.isArray(data.weekDaily || data.weeklyDaily)
+                ? (data.weekDaily || data.weeklyDaily)
+                : [];
+            personalWeekData.previous = Array.isArray(data.lastWeekDaily)
+                ? data.lastWeekDaily
+                : [];
+            personalWeekLabels.current = data.weekLabel || 'Minggu Ini (Senin–hari ini)';
+            personalWeekLabels.previous = data.lastWeekLabel || 'Minggu Lalu (Senin–Minggu)';
+            activePersonalWeek = 'current';
+            renderPersonalWeekRecords();
 
             if (data.monthTotal !== undefined && data.monthTotal !== null) {
                 modalMonthTotal.innerText = Number(data.monthTotal || 0).toLocaleString('id-ID');
@@ -443,10 +510,24 @@
                 monthCaption.innerText = 'Total bulan ini belum tersedia.';
             }
 
-            renderLeaderboard(data.leaderboard || [], currentUserName);
-            if (leaderboardPeriod) {
-                leaderboardPeriod.innerText = data.leaderboardMonthLabel || 'Total bulan ini';
-            }
+            leaderboardData.month = Array.isArray(data.leaderboardMonth)
+                ? data.leaderboardMonth
+                : (data.leaderboard || []);
+            leaderboardData.week = Array.isArray(data.leaderboardWeek)
+                ? data.leaderboardWeek
+                : [];
+            leaderboardData.lastWeek = Array.isArray(data.leaderboardLastWeek)
+                ? data.leaderboardLastWeek
+                : [];
+            leaderboardData.consistency = Array.isArray(data.leaderboardConsistency)
+                ? data.leaderboardConsistency
+                : [];
+            leaderboardLabels.month = data.leaderboardMonthLabel || 'Peringkat bulan ini';
+            leaderboardLabels.week = data.leaderboardWeekLabel || 'Peringkat Minggu Ini (Senin–hari ini)';
+            leaderboardLabels.lastWeek = data.leaderboardLastWeekLabel || 'Peringkat Minggu Lalu (Senin–Minggu)';
+            leaderboardLabels.consistency = data.leaderboardConsistencyLabel || 'Paling Konsisten Bulan Ini';
+            activeLeaderboardPeriod = 'week';
+            renderLeaderboardForPeriod();
             leaderboardSection.classList.add('hidden');
             showLeaderboardBtn.innerText = '🏆 Leaderboard';
             infoModal.classList.remove('hidden');
@@ -486,7 +567,7 @@
             }
 
             checkBtn.disabled = true;
-            checkBtn.innerText = 'Memeriksa nama...';
+            checkBtn.innerText = 'tunggu memeriksa nama....';
 
             try {
                 const data = await requestParticipantData(name);
@@ -522,7 +603,7 @@
                 alert('Tidak dapat memeriksa nama peserta. ' + (error.message || 'Periksa koneksi dan Apps Script.'));
             } finally {
                 checkBtn.disabled = false;
-                checkBtn.innerText = 'Lanjutkan.. ';
+                checkBtn.innerText = 'Lihat Rekor Pribadi';
             }
         });
 
@@ -608,12 +689,42 @@
         });
 
         // ==========================================
-        // MENAMPILKAN REKOR PER HARI (SENIN S.D. HARI INI)
+        // PILIH REKOR HARIAN PRIBADI: MINGGU INI / MINGGU LALU
         // ==========================================
-        function renderWeeklyRecords(records) {
+        personalWeekCurrentBtn.addEventListener('click', function () {
+            activePersonalWeek = 'current';
+            renderPersonalWeekRecords();
+        });
+
+        personalWeekLastBtn.addEventListener('click', function () {
+            activePersonalWeek = 'previous';
+            renderPersonalWeekRecords();
+        });
+
+        function renderPersonalWeekRecords() {
+            const isCurrent = activePersonalWeek === 'current';
+            const records = isCurrent ? personalWeekData.current : personalWeekData.previous;
+            personalWeekCaption.innerText = isCurrent
+                ? personalWeekLabels.current
+                : personalWeekLabels.previous;
+
+            personalWeekCurrentBtn.className = isCurrent
+                ? 'py-2.5 px-3 rounded-lg text-sm font-semibold bg-blue-700 text-white border border-blue-500'
+                : 'py-2.5 px-3 rounded-lg text-sm font-semibold bg-slate-700 text-slate-200 border border-slate-600';
+            personalWeekLastBtn.className = !isCurrent
+                ? 'py-2.5 px-3 rounded-lg text-sm font-semibold bg-blue-700 text-white border border-blue-500'
+                : 'py-2.5 px-3 rounded-lg text-sm font-semibold bg-slate-700 text-slate-200 border border-slate-600';
+
+            renderWeeklyRecords(records, isCurrent ? 'Minggu Ini' : 'Minggu Lalu');
+        }
+
+        // ==========================================
+        // MENAMPILKAN REKOR HARIAN PRIBADI
+        // ==========================================
+        function renderWeeklyRecords(records, periodName) {
             if (!Array.isArray(records) || records.length === 0) {
                 weekRecordsBody.innerHTML = `
-                    <tr><td colspan="3" class="px-3 py-3 text-center text-amber-300 text-xs">Data rekor mingguan belum tersedia. Perbarui Apps Script untuk mengirim weekDaily.</td></tr>`;
+                    <tr><td colspan="3" class="px-3 py-3 text-center text-amber-300 text-xs">Data rekor ${periodName || 'mingguan'} belum tersedia. Periksa pembaruan Code.gs.</td></tr>`;
                 return;
             }
 
@@ -623,15 +734,15 @@
                 tr.className = index % 2 === 0 ? "bg-slate-900" : "bg-slate-800";
 
                 const dayCell = document.createElement("td");
-                dayCell.className = "px-3 py-2 text-white";
+                dayCell.className = "px-3 py-1 text-white leading-tight";
                 dayCell.textContent = String(record.day || record.hari || "");
 
                 const dateCell = document.createElement("td");
-                dateCell.className = "px-3 py-2 text-slate-300";
+                dateCell.className = "px-3 py-1 text-slate-300 leading-tight";
                 dateCell.textContent = String(record.date || record.tanggal || "");
 
                 const repsCell = document.createElement("td");
-                repsCell.className = "px-3 py-2 text-right font-bold text-emerald-300";
+                repsCell.className = "px-3 py-1 text-right font-bold text-emerald-300 leading-tight";
                 repsCell.textContent = Number(record.reps ?? record.total ?? 0).toLocaleString("id-ID");
 
                 tr.append(dayCell, dateCell, repsCell);
@@ -639,53 +750,109 @@
             });
         }
 
-        // Tombol untuk membuka/menyembunyikan rekor semua peserta
+        // Tombol untuk membuka/menyembunyikan rekor semua peserta.
         showLeaderboardBtn.addEventListener('click', function () {
             const isHidden = leaderboardSection.classList.contains('hidden');
             leaderboardSection.classList.toggle('hidden');
             showLeaderboardBtn.innerText = isHidden
-                ? "Sembunyikan Rekor"
+                ? "Sembunyikan Leaderboard"
                 : "🏆 Leaderboard";
         });
 
+        // Pilihan periode leaderboard.
+        leaderboardWeekBtn.addEventListener('click', function () {
+            activeLeaderboardPeriod = 'week';
+            renderLeaderboardForPeriod();
+        });
+
+        leaderboardLastWeekBtn.addEventListener('click', function () {
+            activeLeaderboardPeriod = 'lastWeek';
+            renderLeaderboardForPeriod();
+        });
+
+        leaderboardMonthBtn.addEventListener('click', function () {
+            activeLeaderboardPeriod = 'month';
+            renderLeaderboardForPeriod();
+        });
+
+        leaderboardConsistencyBtn.addEventListener('click', function () {
+            activeLeaderboardPeriod = 'consistency';
+            renderLeaderboardForPeriod();
+        });
+
+        function renderLeaderboardForPeriod() {
+            const isWeek = activeLeaderboardPeriod === 'week';
+            const isLastWeek = activeLeaderboardPeriod === 'lastWeek';
+            const isConsistency = activeLeaderboardPeriod === 'consistency';
+            const records = isWeek
+                ? leaderboardData.week
+                : (isLastWeek ? leaderboardData.lastWeek
+                : (isConsistency ? leaderboardData.consistency : leaderboardData.month));
+            const label = isWeek
+                ? leaderboardLabels.week
+                : (isLastWeek ? leaderboardLabels.lastWeek
+                : (isConsistency ? leaderboardLabels.consistency : leaderboardLabels.month));
+
+            leaderboardPeriod.innerText = label;
+            leaderboardColumnLabel.innerText = isConsistency
+                ? 'Hari Aktif / Total Squat'
+                : (isWeek ? 'Squat Minggu Ini'
+                : (isLastWeek ? 'Squat Minggu Lalu' : 'Squat Bulan Ini'));
+
+            const activeClass = 'py-2.5 px-1 rounded-lg text-xs font-semibold whitespace-nowrap bg-blue-700 text-white border border-blue-500';
+            const inactiveClass = 'py-2.5 px-1 rounded-lg text-xs font-semibold whitespace-nowrap bg-slate-700 text-slate-200 border border-slate-600';
+
+            leaderboardWeekBtn.className = isWeek ? activeClass : inactiveClass;
+            leaderboardLastWeekBtn.className = isLastWeek ? activeClass : inactiveClass;
+            leaderboardMonthBtn.className = (!isWeek && !isLastWeek && !isConsistency) ? activeClass : inactiveClass;
+            leaderboardConsistencyBtn.className = isConsistency ? activeClass : inactiveClass;
+
+            const description = isConsistency ? 'bulan berjalan; diurutkan berdasarkan hari aktif, lalu total squat'
+                : (isWeek ? 'minggu ini'
+                : (isLastWeek ? 'minggu lalu' : 'bulan berjalan'));
+            renderLeaderboard(records, currentUserName, label, description, isConsistency);
+        }
+
         // ==========================================
-        // MENAMPILKAN LEADERBOARD
+        // MENAMPILKAN LEADERBOARD SESUAI PERIODE
         // ==========================================
-        function renderLeaderboard(records, activeName) {
+        function renderLeaderboard(records, activeName, periodLabel, periodDescription, isConsistency = false) {
             if (!Array.isArray(records) || records.length === 0) {
                 leaderboardBody.innerHTML = `
                     <tr>
                         <td colspan="3" class="px-3 py-4 text-center text-slate-400">
-                            Belum ada data rekap.
+                            Belum ada data peserta.
                         </td>
                     </tr>`;
-
-                leaderboardStatus.innerText = "Pastikan sheet rekap memiliki data.";
+                leaderboardStatus.innerText = 'Tidak ada data untuk periode ini.';
                 return;
             }
 
-            records.sort((a, b) =>
-                Number(b.total ?? b.totalReps ?? 0) -
-                Number(a.total ?? a.totalReps ?? 0)
-            );
+            const sortedRecords = records.slice().sort((a, b) => {
+                if (isConsistency) {
+                    return Number(b.activeDays || 0) - Number(a.activeDays || 0) ||
+                        Number(b.total || 0) - Number(a.total || 0) ||
+                        String(a.nama || '').localeCompare(String(b.nama || ''));
+                }
+                return Number(b.total ?? b.totalReps ?? 0) -
+                    Number(a.total ?? a.totalReps ?? 0);
+            });
 
             leaderboardBody.innerHTML = "";
 
-            records.forEach((record, index) => {
+            sortedRecords.forEach((record, index) => {
                 const nama = String(record.nama || record.name || "");
                 const total = Number(record.total ?? record.totalReps ?? 0);
 
                 const tr = document.createElement("tr");
-                tr.className = index % 2 === 0
-                    ? "bg-slate-900"
-                    : "bg-slate-800";
+                tr.className = index % 2 === 0 ? "bg-slate-900" : "bg-slate-800";
 
                 const rankCell = document.createElement("td");
-                rankCell.className = "px-3 py-2 text-slate-400";
+                rankCell.className = "px-3 py-1 text-slate-400 leading-tight";
                 rankCell.textContent = index + 1;
 
                 const nameCell = document.createElement("td");
-                nameCell.className = "px-3 py-2 text-white break-words";
+                nameCell.className = "px-3 py-1 text-white break-words leading-tight";
                 nameCell.textContent = nama;
 
                 if (nama.trim().toLowerCase() === activeName.trim().toLowerCase()) {
@@ -694,18 +861,20 @@
                 }
 
                 const totalCell = document.createElement("td");
-                totalCell.className = "px-3 py-2 text-right font-bold text-emerald-300";
-                totalCell.textContent = total.toLocaleString("id-ID");
+                totalCell.className = "px-3 py-1 text-right font-bold text-emerald-300 leading-tight";
+                if (isConsistency) {
+                    const activeDays = Number(record.activeDays || 0);
+                    totalCell.textContent = `${activeDays} hari • ${total.toLocaleString("id-ID")} s`;
+                } else {
+                    totalCell.textContent = total.toLocaleString("id-ID");
+                }
 
-                tr.appendChild(rankCell);
-                tr.appendChild(nameCell);
-                tr.appendChild(totalCell);
-
+                tr.append(rankCell, nameCell, totalCell);
                 leaderboardBody.appendChild(tr);
             });
 
             leaderboardStatus.innerText =
-                `${records.length} peserta • diurutkan berdasarkan squat bulan berjalan`;
+                `${sortedRecords.length} peserta • dihitung untuk ${periodDescription}`;
         }
 
         // ==========================================
