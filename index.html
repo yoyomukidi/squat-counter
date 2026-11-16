@@ -33,6 +33,42 @@
             #leaderboard-section button { font-size: 12px; letter-spacing: -0.02em; }
         }
     </style>
+<style>
+    /* Tampilan tombol leaderboard responsif */
+    #leaderboard-section .leaderboard-tabs {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        width: 100%;
+    }
+
+    #leaderboard-section .leaderboard-tabs button {
+        width: 100%;
+        min-width: 0;
+        min-height: 44px;
+        padding: 10px 6px;
+        white-space: normal;
+        overflow-wrap: break-word;
+        word-break: normal;
+        line-height: 1.25;
+        text-align: center;
+        font-size: 13px;
+    }
+
+    /* Tablet */
+    @media (min-width: 520px) {
+        #leaderboard-section .leaderboard-tabs {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+    }
+
+    /* Desktop */
+    @media (min-width: 900px) {
+        #leaderboard-section .leaderboard-tabs {
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+        }
+    }
+</style>
 </head>
 
 <body class="bg-slate-900 text-white font-sans flex flex-col items-center justify-center min-h-screen p-4">
@@ -187,24 +223,34 @@
                     <h4 class="text-sm font-bold text-white">🏆 Leaderboard</h4>
                 </div>
 
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
-                    <button id="leaderboard-week-btn"
-                        class="py-2.5 px-1 rounded-lg text-xs font-semibold whitespace-nowrap bg-blue-700 text-white border border-blue-500">
-                        Minggu Ini
-                    </button>
-                    <button id="leaderboard-last-week-btn"
-                        class="py-2.5 px-1 rounded-lg text-xs font-semibold whitespace-nowrap bg-slate-700 text-slate-200 border border-slate-600">
-                        Minggu Lalu
-                    </button>
-                    <button id="leaderboard-month-btn"
-                        class="py-2.5 px-1 rounded-lg text-xs font-semibold whitespace-nowrap bg-slate-700 text-slate-200 border border-slate-600">
-                        Bulan Ini
-                    </button>
-                    <button id="leaderboard-consistency-btn"
-                        class="py-2.5 px-1 rounded-lg text-xs font-semibold whitespace-nowrap bg-slate-700 text-slate-200 border border-slate-600">
-                        Konsisten
-                    </button>
-                </div>
+                <div class="leaderboard-tabs mb-3">
+
+    <button id="leaderboard-week-btn"
+        class="rounded-lg font-semibold border transition-colors">
+        Minggu Ini
+    </button>
+
+    <button id="leaderboard-last-week-btn"
+        class="rounded-lg font-semibold border transition-colors">
+        Minggu Lalu
+    </button>
+
+    <button id="leaderboard-month-btn"
+        class="rounded-lg font-semibold border transition-colors">
+        Bulan Ini
+    </button>
+
+    <button id="leaderboard-consistency-btn"
+        class="rounded-lg font-semibold border transition-colors">
+        Konsisten
+    </button>
+
+    <button id="leaderboard-points-btn"
+        class="rounded-lg font-semibold border transition-colors">
+        Total Poin
+    </button>
+
+</div>
 
                 <p id="leaderboard-period" class="text-xs text-slate-400 mb-2">Peringkat bulan ini</p>
                 <div class="bg-slate-900 border border-slate-700 rounded-xl overflow-hidden">
@@ -336,6 +382,7 @@
         const leaderboardLastWeekBtn = document.getElementById('leaderboard-last-week-btn');
         const leaderboardMonthBtn = document.getElementById('leaderboard-month-btn');
         const leaderboardConsistencyBtn = document.getElementById('leaderboard-consistency-btn');
+        const leaderboardPointsBtn = document.getElementById('leaderboard-points-btn');
         const leaderboardColumnLabel = document.getElementById('leaderboard-column-label');
         const leaderboardConsistencyDaysHeading = document.getElementById('leaderboard-consistency-days-heading');
         const leaderboardConsistencyTotalHeading = document.getElementById('leaderboard-consistency-total-heading');
@@ -364,12 +411,13 @@
         let cameraLoopActive = false;
         let cameraStream = null;
         let poseInstance = null;
-        let leaderboardData = { week: [], lastWeek: [], month: [], consistency: [] };
+        let leaderboardData = { week: [], lastWeek: [], month: [], consistency: [], points: [] };
         let leaderboardLabels = {
             week: 'Peringkat Minggu Ini',
             lastWeek: 'Peringkat Minggu Lalu',
             month: 'Peringkat bulan ini',
-            consistency: 'Paling Konsisten Bulan Ini'
+            consistency: 'Paling Konsisten Bulan Ini',
+            points: 'Akumulasi Poin Bulan Ini'
         };
         let activeLeaderboardPeriod = 'week';
         let personalWeekData = { current: [], previous: [] };
@@ -528,10 +576,14 @@
             leaderboardData.consistency = Array.isArray(data.leaderboardConsistency)
                 ? data.leaderboardConsistency
                 : [];
+            leaderboardData.points = Array.isArray(data.leaderboardMonthlyPoints)
+                ? data.leaderboardMonthlyPoints
+                : [];
             leaderboardLabels.month = data.leaderboardMonthLabel || 'Peringkat bulan ini';
             leaderboardLabels.week = data.leaderboardWeekLabel || 'Peringkat Minggu Ini (Senin–hari ini)';
             leaderboardLabels.lastWeek = data.leaderboardLastWeekLabel || 'Peringkat Minggu Lalu (Senin–Minggu)';
             leaderboardLabels.consistency = data.leaderboardConsistencyLabel || 'Paling Konsisten Bulan Ini';
+            leaderboardLabels.points = data.leaderboardMonthlyPointsLabel || 'Akumulasi Poin Bulan Ini';
             activeLeaderboardPeriod = 'week';
             renderLeaderboardForPeriod();
             leaderboardSection.classList.add('hidden');
@@ -786,52 +838,61 @@
             renderLeaderboardForPeriod();
         });
 
+        leaderboardPointsBtn.addEventListener('click', function () {
+            activeLeaderboardPeriod = 'points';
+            renderLeaderboardForPeriod();
+        });
+
         function renderLeaderboardForPeriod() {
             const isWeek = activeLeaderboardPeriod === 'week';
             const isLastWeek = activeLeaderboardPeriod === 'lastWeek';
             const isConsistency = activeLeaderboardPeriod === 'consistency';
+            const isPoints = activeLeaderboardPeriod === 'points';
             const records = isWeek
                 ? leaderboardData.week
                 : (isLastWeek ? leaderboardData.lastWeek
-                : (isConsistency ? leaderboardData.consistency : leaderboardData.month));
+                : (isConsistency ? leaderboardData.consistency
+                : (isPoints ? leaderboardData.points : leaderboardData.month)));
             const label = isWeek
                 ? leaderboardLabels.week
                 : (isLastWeek ? leaderboardLabels.lastWeek
-                : (isConsistency ? leaderboardLabels.consistency : leaderboardLabels.month));
+                : (isConsistency ? leaderboardLabels.consistency
+                : (isPoints ? leaderboardLabels.points : leaderboardLabels.month)));
 
             leaderboardPeriod.innerText = label;
             leaderboardColumnLabel.innerText = isConsistency
                 ? 'Hari Aktif / Total Squat'
-                : (isWeek ? 'Squat Minggu Ini'
-                : (isLastWeek ? 'Squat Minggu Lalu' : 'Squat Bulan Ini'));
+                : (isPoints ? 'Total Poin' : (isWeek ? 'Squat Minggu Ini'
+                : (isLastWeek ? 'Squat Minggu Lalu' : 'Squat Bulan Ini')));
 
             const activeClass = 'py-2.5 px-1 rounded-lg text-xs font-semibold whitespace-nowrap bg-blue-700 text-white border border-blue-500';
             const inactiveClass = 'py-2.5 px-1 rounded-lg text-xs font-semibold whitespace-nowrap bg-slate-700 text-slate-200 border border-slate-600';
 
             leaderboardWeekBtn.className = isWeek ? activeClass : inactiveClass;
             leaderboardLastWeekBtn.className = isLastWeek ? activeClass : inactiveClass;
-            leaderboardMonthBtn.className = (!isWeek && !isLastWeek && !isConsistency) ? activeClass : inactiveClass;
+            leaderboardMonthBtn.className = (!isWeek && !isLastWeek && !isConsistency && !isPoints) ? activeClass : inactiveClass;
             leaderboardConsistencyBtn.className = isConsistency ? activeClass : inactiveClass;
+            leaderboardPointsBtn.className = isPoints ? activeClass : inactiveClass;
 
             const description = isConsistency ? 'bulan berjalan; diurutkan berdasarkan hari aktif, lalu total squat'
-                : (isWeek ? 'minggu ini'
-                : (isLastWeek ? 'minggu lalu' : 'bulan berjalan'));
-            renderLeaderboard(records, currentUserName, label, description, isConsistency, isLastWeek);
+                : (isPoints ? 'akumulasi poin dari minggu-minggu yang sudah selesai pada bulan berjalan'
+                : (isWeek ? 'minggu ini' : (isLastWeek ? 'minggu lalu' : 'bulan berjalan')));
+            renderLeaderboard(records, currentUserName, label, description, isConsistency, isLastWeek, isPoints);
         }
 
         // ==========================================
         // MENAMPILKAN LEADERBOARD SESUAI PERIODE
         // ==========================================
-        function renderLeaderboard(records, activeName, periodLabel, periodDescription, isConsistency = false, isLastWeek = false) {
-            // Header disesuaikan dengan jenis leaderboard yang sedang aktif.
-            // Minggu Lalu menampilkan kolom poin; Konsisten memisahkan Hari Aktif dan Total Squat.
-            leaderboardPointsHeading.classList.toggle('hidden', !isLastWeek);
-            leaderboardColumnLabel.classList.toggle('hidden', isConsistency);
+        function renderLeaderboard(records, activeName, periodLabel, periodDescription, isConsistency = false, isLastWeek = false, isPoints = false) {
+            // Minggu Lalu dan Akumulasi Poin menampilkan kolom poin.
+            leaderboardPointsHeading.classList.toggle('hidden', !(isLastWeek || isPoints));
+            leaderboardPointsHeading.innerText = isPoints ? 'Total Poin' : 'Poin';
+            leaderboardColumnLabel.classList.toggle('hidden', isConsistency || isPoints);
             leaderboardConsistencyDaysHeading.classList.toggle('hidden', !isConsistency);
             leaderboardConsistencyTotalHeading.classList.toggle('hidden', !isConsistency);
 
             if (!Array.isArray(records) || records.length === 0) {
-                const columnCount = (isLastWeek || isConsistency) ? 4 : 3;
+                const columnCount = (isLastWeek || isConsistency || isPoints) ? 4 : 3;
                 leaderboardBody.innerHTML = `
                     <tr>
                         <td colspan="${columnCount}" class="px-3 py-4 text-center text-slate-400">
@@ -846,6 +907,10 @@
                 if (isConsistency) {
                     return Number(b.activeDays || 0) - Number(a.activeDays || 0) ||
                         Number(b.total || 0) - Number(a.total || 0) ||
+                        String(a.nama || '').localeCompare(String(b.nama || ''));
+                }
+                if (isPoints) {
+                    return Number(b.points || 0) - Number(a.points || 0) ||
                         String(a.nama || '').localeCompare(String(b.nama || ''));
                 }
                 return Number(b.total ?? b.totalReps ?? 0) -
@@ -886,11 +951,13 @@
                     consistencyTotalCell.textContent = total.toLocaleString("id-ID");
 
                     tr.append(rankCell, nameCell, activeDaysCell, consistencyTotalCell);
-                } else {
+                } else if (!isPoints) {
                     const totalCell = document.createElement("td");
                     totalCell.className = "px-3 py-1 text-right font-bold text-emerald-300 leading-tight";
                     totalCell.textContent = total.toLocaleString("id-ID");
                     tr.append(rankCell, nameCell, totalCell);
+                } else {
+                    tr.append(rankCell, nameCell);
                 }
 
                 // Poin Minggu Lalu: peringkat 1–15 mendapat poin sesuai skema.
@@ -900,6 +967,11 @@
                     const pointsCell = document.createElement("td");
                     pointsCell.className = "px-2 py-1 text-right font-bold text-amber-300 whitespace-nowrap leading-tight";
                     pointsCell.textContent = weeklyPoints[index] ?? 0;
+                    tr.appendChild(pointsCell);
+                } else if (isPoints) {
+                    const pointsCell = document.createElement("td");
+                    pointsCell.className = "px-2 py-1 text-right font-bold text-amber-300 whitespace-nowrap leading-tight";
+                    pointsCell.textContent = Number(record.points || 0).toLocaleString("id-ID");
                     tr.appendChild(pointsCell);
                 }
 
